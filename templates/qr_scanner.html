@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}FitLife - Lector QR de Acceso{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-custom p-4">
+            <h3 class="fw-bold mb-3"><i class="bi bi-qr-code-scan text-warning"></i> Terminal de Acceso Físico (Lector QR)</h3>
+            <p class="text-secondary small">
+                Simula la lectura de código QR en los torniquetes de acceso del gimnasio. Valida la membresía en milisegundos e impide el paso de usuarios con estado <strong>VENCIDA</strong> o <strong>CONGELADA</strong>.
+            </p>
+
+            <!-- FORMULARIO DE ESCANEO -->
+            <div class="mb-3">
+                <label class="form-label text-light fw-bold">Ingresar Código QR del Socio:</label>
+                <div class="input-group">
+                    <input type="text" id="codigoQrInput" class="form-control bg-dark text-light border-secondary" placeholder="Ej: FIT-XXXXXXXXXX">
+                    <select id="tipoAcceso" class="form-select bg-dark text-light border-secondary" style="max-width: 140px;">
+                        <option value="ENTRADA">ENTRADA</option>
+                        <option value="SALIDA">SALIDA</option>
+                    </select>
+                    <button class="btn btn-success fw-bold px-4" onclick="procesarAcceso()">
+                        <i class="bi bi-check2-circle"></i> Validar
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOTONES RÁPIDOS PARA LA DEFENSA -->
+            <div class="p-3 mb-4 rounded" style="background-color: #111827; border: 1px dashed #374151;">
+                <label class="text-warning small fw-bold mb-2 d-block">
+                    <i class="bi bi-lightning-charge"></i> Socios de Prueba Precargados (Haz clic para probar en vivo):
+                </label>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for s in socios %}
+                        <button class="btn btn-sm btn-outline-light text-start" onclick="cargarCodigo('{{ s.codigo_qr }}')">
+                            <strong>{{ s.username }}</strong> ({{ s.get_full_name }})<br>
+                            <code class="text-info">{{ s.codigo_qr }}</code>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- RESULTADO VISUAL -->
+            <div id="resultadoAcceso" style="display: none;" class="card-custom p-4 text-center">
+                <div id="iconoResultado" class="display-3 mb-2"></div>
+                <h4 id="tituloResultado" class="fw-bold mb-1"></h4>
+                <p id="mensajeResultado" class="fs-5 mb-2"></p>
+                <div id="detalleSocio" class="text-secondary small"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cargarCodigo(qr) {
+    document.getElementById('codigoQrInput').value = qr;
+    procesarAcceso();
+}
+
+async function procesarAcceso() {
+    const qr = document.getElementById('codigoQrInput').value.trim();
+    const tipo = document.getElementById('tipoAcceso').value;
+    const resBox = document.getElementById('resultadoAcceso');
+    const icono = document.getElementById('iconoResultado');
+    const titulo = document.getElementById('tituloResultado');
+    const mensaje = document.getElementById('mensajeResultado');
+    const detalle = document.getElementById('detalleSocio');
+
+    if (!qr) {
+        alert('Por favor ingrese un código QR');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/acceso-qr/validar/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({codigo_qr: qr, tipo: tipo})
+        });
+        const data = await res.json();
+
+        resBox.style.display = 'block';
+        if (data.estado === 'PERMITIDO') {
+            resBox.style.borderColor = '#10b981';
+            icono.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+            titulo.innerHTML = '<span class="text-success">ACCESO PERMITIDO (TORNIQUETE LIBERADO)</span>';
+            mensaje.innerText = data.mensaje;
+            detalle.innerHTML = `Socio: <strong>${data.socio || ''}</strong> | Plan: ${data.plan || 'Sin plan'} | Vencimiento: ${data.vence || 'N/A'}`;
+        } else {
+            resBox.style.borderColor = '#ef4444';
+            icono.innerHTML = '<i class="bi bi-x-octagon-fill text-danger"></i>';
+            titulo.innerHTML = '<span class="text-danger">ACCESO DENEGADO (BLOQUEO FÍSICO)</span>';
+            mensaje.innerText = data.mensaje || data.error;
+            detalle.innerHTML = `Motivo: <strong class="text-warning">${data.motivo || 'No autorizado'}</strong>`;
+        }
+    } catch (e) {
+        alert('Error al validar acceso con el servidor.');
+    }
+}
+</script>
+{% endblock %}

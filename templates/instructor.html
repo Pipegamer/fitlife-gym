@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block title %}FitLife - Portal Docente & Sala{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- CABECERA PRINCIPAL DEL COACH -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" class="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 p-1 shadow-xs" alt="Avatar">
+            <div>
+                <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span> Coach Titular
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 mt-1">{{ user.get_full_name|default:user.username }}</h2>
+                <p class="text-xs text-slate-500">Especialidad: <strong class="text-slate-800">{{ user.especialidad|default:"Acondicionamiento Físico General" }}</strong></p>
+            </div>
+        </div>
+
+        <!-- ACCIONES RÁPIDAS -->
+        <div class="flex items-center gap-2">
+            <button onclick="location.reload()" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors shadow-xs">
+                <i class="bi bi-arrow-clockwise me-1"></i> Actualizar Asistencia
+            </button>
+            <a href="{% url 'home' %}" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-xs">
+                Ir al Sitio
+            </a>
+        </div>
+    </div>
+
+    <!-- TARJETAS DE KPIS DOCENTES EN TIEMPO REAL -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sesiones Asignadas</span>
+            <div class="text-2xl font-black text-slate-900">{{ total_clases }}</div>
+            <span class="text-xs text-slate-500 font-medium">Itinerario en sistema</span>
+        </div>
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Clases de Hoy</span>
+            <div class="text-2xl font-black text-indigo-700">{{ clases_hoy_count }}</div>
+            <span class="text-xs text-indigo-600 font-semibold">{{ hoy_str }}</span>
+        </div>
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Inscritos Hoy</span>
+            <div class="text-2xl font-black text-slate-900">{{ alumnos_confirmados_hoy }}</div>
+            <span class="text-xs text-slate-500 font-medium">Socios con cupo</span>
+        </div>
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Acreditados (Check-in)</span>
+            <div class="text-2xl font-black text-emerald-700">{{ alumnos_asistidos_hoy }}</div>
+            <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                <i class="bi bi-check-all"></i> Presentes en recinto
+            </span>
+        </div>
+    </div>
+
+    <!-- MENSAJES DE ALERTA DINÁMICOS -->
+    <div id="alertaCoach" class="hidden p-4 rounded-2xl text-sm font-semibold"></div>
+
+    <!-- FILTRO RÁPIDO DE CLASES -->
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+        <button onclick="filtrarClasesDocente('todas', this)" class="btn-filtro-docente px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs">
+            Todas mis Clases ({{ total_clases }})
+        </button>
+        <button onclick="filtrarClasesDocente('hoy', this)" class="btn-filtro-docente px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+            Sesiones de Hoy ({{ clases_hoy_count }})
+        </button>
+    </div>
+
+    <!-- LISTADO DE SESIONES Y NÓMINAS DE SALA -->
+    <div class="space-y-6" id="contenedorClasesDocente">
+        {% for c in clases %}
+        <div class="tarjeta-clase-docente bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6"
+             data-es-hoy="{% if c.fecha_hora|date:'d/m/Y' == hoy_str %}true{% else %}false{% endif %}">
+            
+            <!-- ENCABEZADO DE LA SESIÓN -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800">
+                            {{ c.disciplina.nombre|default:"General" }}
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
+                            {{ c.sala.nombre }} (Aforo Máx: {{ c.cupo_maximo }})
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
+                            {% if c.estado == 'COORDINADA' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif c.estado == 'PROGRAMADA' %}bg-amber-50 text-amber-800 border border-amber-200
+                            {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                            {{ c.get_estado_display }}
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-900 tracking-tight">{{ c.nombre }}</h3>
+                    <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                        <i class="bi bi-clock-fill text-indigo-600"></i>
+                        <span>{{ c.dia_semana_nombre }} • {{ c.fecha_hora|date:"d/m/Y - H:i" }} hrs.</span>
+                    </p>
+                </div>
+
+                <!-- CONTADOR RÁPIDO DE SALA Y RATIO DE ASISTENCIA -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 flex items-center gap-6">
+                    <div class="text-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cupos Confirmados</span>
+                        <strong class="text-base font-black text-slate-800">{{ c.cupos_ocupados }} / {{ c.cupo_maximo }}</strong>
+                    </div>
+                    <div class="h-8 w-px bg-slate-200"></div>
+                    <div class="text-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Presentes en Sala</span>
+                        <strong class="text-base font-black text-emerald-600">
+                            {% with asistidos=c.reservas.all %}
+                                {{ c.cupos_ocupados }}
+                            {% endwith %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ENFOQUE FÍSICO / RUTINA (CON BOTÓN DE EDICIÓN DOCENTE) -->
+            <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-800 flex items-center gap-1">
+                        <i class="bi bi-activity"></i> Enfoque del Entrenamiento & WOD Planificado:
+                    </span>
+                    <p class="text-xs text-slate-700 leading-relaxed font-medium" id="texto-rutina-{{ c.id }}">
+                        {{ c.descripcion|default:"Entrenamiento funcional de alta intensidad y acondicionamiento general." }}
+                    </p>
+                </div>
+                <button onclick="abrirModalEditarRutina({{ c.id }}, '{{ c.nombre|escapejs }}', document.getElementById('texto-rutina-{{ c.id }}').innerText.trim())" 
+                        class="shrink-0 px-3 py-1.5 rounded-xl font-bold text-xs bg-white text-indigo-900 border border-indigo-200 hover:bg-indigo-100/60 shadow-2xs transition-colors">
+                    <i class="bi bi-pencil-square me-1"></i> Modificar Rutina
+                </button>
+            </div>
+
+            <!-- NÓMINA DE ASISTENCIA EN SALA (PRIVACIDAD GARANTIZADA: SIN DATOS BANCARIOS) -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Nómina de Alumnos Inscritos ({{ c.reservas.all|length }})
+                    </h4>
+                    <span class="text-[11px] text-slate-400 italic">Los socios validados en torniquete cambian automáticamente a verde.</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                                <th class="py-2.5">Alumno</th>
+                                <th>RUT</th>
+                                <th>Paso por Torniquete</th>
+                                <th>Acreditación Docente</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for r in c.reservas.all %}
+                            <tr>
+                                <td class="py-3 font-bold text-slate-900 flex items-center gap-2">
+                                    <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px] text-slate-600">
+                                        {{ r.usuario.first_name|first|default:r.usuario.username|first|upper }}
+                                    </div>
+                                    <span>{{ r.usuario.get_full_name|default:r.usuario.username }}</span>
+                                </td>
+                                <td><code class="text-slate-600 font-mono">{{ r.usuario.rut|default:"-" }}</code></td>
+                                <td>
+                                    {% if r.estado == 'ASISTIO' %}
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">
+                                            <i class="bi bi-check-circle-fill"></i> ✔ Asistió (Check-in OK)
+                                        </span>
+                                    {% elif r.estado == 'CONFIRMADA' %}
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1 w-max">
+                                            <i class="bi bi-hourglass-split"></i> ⏳ En Espera de Ingreso
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 w-max">
+                                            {{ r.get_estado_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.estado != 'ASISTIO' %}
+                                        <button onclick="marcarAsistenciaDocente({{ c.id }}, {{ r.usuario.id }}, '{{ r.usuario.username|escapejs }}')" 
+                                                class="px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors">
+                                            <i class="bi bi-check-lg me-1"></i> Acreditar Asistencia
+                                        </button>
+                                    {% else %}
+                                        <span class="text-emerald-700 font-bold flex items-center gap-1">
+                                            <i class="bi bi-person-check-fill text-sm"></i> Confirmado en Sala
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-slate-400 italic bg-slate-50/50 rounded-xl">
+                                    No hay socios inscritos en esta sesión aún.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        {% empty %}
+        <!-- EMPTY STATE DOCENTE -->
+        <div class="bg-white p-12 rounded-3xl text-center space-y-4 border border-slate-200">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-3xl font-bold">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <div class="space-y-1">
+                <h3 class="text-xl font-bold text-slate-900">Sin sesiones asignadas en tu itinerario</h3>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                    Actualmente no tienes clases coordinadas para esta semana. Consulta con Coordinación Deportiva para la asignación de horarios.
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- MODAL: ACTUALIZAR ENFOQUE DE ENTRENAMIENTO -->
+<div id="modalRutina" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-lg w-full p-6 sm:p-8 rounded-3xl shadow-xl space-y-4 border border-slate-100">
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Planificación Pedagógica</span>
+            <h4 class="font-black text-slate-900 text-lg mt-0.5" id="modalRutinaTitulo">Modificar Rutina de Clase</h4>
+        </div>
+        <input type="hidden" id="modalRutinaClaseId">
+        
+        <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descripción del Trabajo Físico (WOD / Enfoque)</label>
+            <textarea id="modalRutinaDesc" rows="4" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 outline-none leading-relaxed" placeholder="Especifica circuitos, intervalos, grupos musculares e implementos a utilizar..."></textarea>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+            <button onclick="guardarRutinaDocente()" class="flex-1 py-3 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors">
+                Guardar y Publicar para Socios
+            </button>
+            <button onclick="cerrarModalEditarRutina()" class="px-4 py-3 rounded-xl font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function notificarCoach(msg, ok) {
+    const box = document.getElementById('alertaCoach');
+    box.className = ok 
+        ? "p-4 rounded-2xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-4" 
+        : "p-4 rounded-2xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 mb-4";
+    box.innerText = msg;
+    box.classList.remove('hidden');
+    window.scrollTo({ top: box.offsetTop - 80, behavior: 'smooth' });
+}
+
+// FILTRAR CLASES DEL PROFESOR (TODAS VS HOY)
+function filtrarClasesDocente(filtro, btn) {
+    document.querySelectorAll('.btn-filtro-docente').forEach(b => {
+        b.className = 'btn-filtro-docente px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100';
+    });
+    btn.className = 'btn-filtro-docente px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs';
+
+    document.querySelectorAll('.tarjeta-clase-docente').forEach(tarjeta => {
+        const esHoy = tarjeta.getAttribute('data-es-hoy') === 'true';
+        if (filtro === 'todas') {
+            tarjeta.classList.remove('hidden');
+        } else if (filtro === 'hoy') {
+            if (esHoy) tarjeta.classList.remove('hidden');
+            else tarjeta.classList.add('hidden');
+        }
+    });
+}
+
+// MARCAR ASISTENCIA MANUAL EN SALA
+async function marcarAsistenciaDocente(claseId, usuarioId, username) {
+    try {
+        const res = await fetch(`/api/clases/${claseId}/asistencia-manual/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+            body: JSON.stringify({ usuario_id: usuarioId })
+        });
+        const d = await res.json();
+        if (res.ok) {
+            notificarCoach(d.mensaje, true);
+            setTimeout(() => location.reload(), 1100);
+        } else {
+            notificarCoach(d.error || 'Error al acreditar asistencia.', false);
+        }
+    } catch(e) {
+        alert('Error de conexión.');
+    }
+}
+
+// MODAL DE RUTINA / WOD
+function abrirModalEditarRutina(claseId, nombreClase, descripcionActual) {
+    document.getElementById('modalRutinaClaseId').value = claseId;
+    document.getElementById('modalRutinaTitulo').innerText = `Rutina: ${nombreClase}`;
+    document.getElementById('modalRutinaDesc').value = descripcionActual;
+    document.getElementById('modalRutina').classList.remove('hidden');
+}
+
+function cerrarModalEditarRutina() {
+    document.getElementById('modalRutina').classList.add('hidden');
+}
+
+async function guardarRutinaDocente() {
+    const claseId = document.getElementById('modalRutinaClaseId').value;
+    const desc = document.getElementById('modalRutinaDesc').value.trim();
+
+    if (!desc) return alert('Debes ingresar una descripción válida.');
+
+    try {
+        const res = await fetch(`/api/clases/${claseId}/actualizar-rutina/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+            body: JSON.stringify({ descripcion: desc })
+        });
+        const d = await res.json();
+        if (res.ok) {
+            notificarCoach(d.mensaje, true);
+            cerrarModalEditarRutina();
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            alert(d.error || 'Error al guardar la rutina.');
+        }
+    } catch(e) {
+        alert('Error de conexión.');
+    }
+}
+</script>
+{% endblock %}

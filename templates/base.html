@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FitLife - Wellness & Gym Platform{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- HEADER Y BARRA DE NAVEGACIÓN -->
+    <header class="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logotipo de la Marca -->
+            <a href="{% url 'home' %}" class="flex items-center gap-2 group">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-emerald-200 group-hover:scale-105 transition-transform">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight text-slate-900">Fit<span class="text-emerald-600">Life</span></span>
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Wellness Platform</span>
+                </div>
+            </a>
+
+            <!-- Enlaces Principales Desacoplados -->
+            <nav class="hidden md:flex items-center gap-3 font-semibold text-sm">
+                <a href="{% url 'home' %}" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-house-door me-1"></i> Inicio
+                </a>
+                <a href="{% url 'aforo' %}" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-speedometer2 me-1"></i> Aforo en Vivo
+                </a>
+                <a href="{% url 'clases' %}" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-calendar3 me-1"></i> Clases Grupales
+                </a>
+                <a href="{% url 'planes' %}" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-tag me-1"></i> Planes
+                </a>
+
+                <!-- Vista del Socio -->
+                {% if user.is_authenticated and user.rol == 'SOCIO' %}
+                    <a href="{% url 'mi_membresia' %}" class="px-3 py-2 rounded-xl text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold hover:bg-emerald-100 transition-colors">
+                        <i class="bi bi-qr-code me-1"></i> Mi Membresía & QR
+                    </a>
+                {% endif %}
+
+                <!-- Portal Exclusivo del Instructor / Profesor -->
+                {% if user.is_authenticated and user.rol == 'INSTRUCTOR' %}
+                    <a href="{% url 'portal_instructor' %}" class="px-3 py-2 rounded-xl text-purple-700 bg-purple-50 border border-purple-200 font-bold hover:bg-purple-100 transition-colors">
+                        <i class="bi bi-person-video3 me-1"></i> Portal Docente
+                    </a>
+                {% endif %}
+
+                <!-- Dashboard de Administración y Coordinación -->
+                {% if user.is_authenticated and user.rol in 'ADMINISTRADOR,COORDINADOR' or user.is_staff %}
+                    <a href="{% url 'dashboard' %}" class="px-3 py-2 rounded-xl text-white bg-slate-900 hover:bg-slate-800 font-bold shadow-xs transition-colors">
+                        <i class="bi bi-grid-1x2 me-1"></i> Dashboard
+                    </a>
+                {% endif %}
+            </nav>
+
+            <!-- Estado de Sesión / Acciones -->
+            <div class="flex items-center gap-3">
+                {% if user.is_authenticated %}
+                    <span class="hidden sm:inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                        {{ user.username }} ({{ user.get_rol_display|default:user.rol }})
+                    </span>
+                    <a href="{% url 'logout' %}" class="px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors">
+                        Salir
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-200 transition-all">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO DINÁMICO -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- PIE DE PÁGINA REGLAMENTARIO DE EVALUACIÓN -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-16 text-slate-500 text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-1.5">
+            <p class="font-bold text-slate-800">
+                FitLife Gym Platform - Arquitectura de Software 4+1
+            </p>
+            <p class="text-xs text-slate-600 font-medium">
+                Desarrollador: <span class="font-bold text-slate-900">Felipe Eduardo Rivas Garrido</span> | 
+                Sección: <span class="font-bold text-slate-900">AP-N4-C2</span> | 
+                Año: <span class="font-bold text-slate-900">2026</span>
+            </p>
+            <p class="text-[11px] text-slate-400">
+                Desarrollo Backend Evaluación 3 | Docente: Marcelo Alvarado Aravena | AWS EC2 & PostgreSQL
+            </p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

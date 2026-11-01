@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}FitLife - Wellness & High Performance Gym{% endblock %}
+
+{% block content %}
+<div class="space-y-16 py-8">
+
+    <!-- 1. HERO SECTION: BRANDING & CALL TO ACTION -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="relative bg-slate-950 rounded-3xl p-8 sm:p-14 text-white overflow-hidden shadow-2xl min-h-[460px] flex flex-col justify-between">
+            <!-- Imagen de fondo con overlay degradado -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1400&auto=format&fit=crop" 
+                     alt="FitLife Gym" 
+                     class="w-full h-full object-cover opacity-25 filter contrast-125">
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent"></div>
+            </div>
+
+            <!-- Contenido del Hero -->
+            <div class="relative z-10 max-w-2xl space-y-4">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 text-xs font-bold uppercase tracking-wider backdrop-blur-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Sede Abierta • Lun a Dom 06:00 a 23:00 hrs
+                </div>
+                <h1 class="text-4xl sm:text-5xl font-black tracking-tight leading-tight">
+                    Tu mejor versión empieza aquí.
+                </h1>
+                <p class="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
+                    Entrenamiento de alto rendimiento, clases guiadas y control de aforo inteligente en tiempo real. Accede sin filas con tu pase QR o RUT.
+                </p>
+                <div class="flex flex-wrap gap-3 pt-2">
+                    <a href="#planes-seccion" class="px-6 py-3 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-all shadow-md shadow-emerald-500/20">
+                        Ver Planes y Tarifas
+                    </a>
+                    <a href="{% url 'clases' %}" class="px-6 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all backdrop-blur-xs">
+                        Horario de Clases
+                    </a>
+                </div>
+            </div>
+
+            <!-- Datos rápidos de la sede -->
+            <div class="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-slate-800/80 text-xs">
+                <div>
+                    <span class="text-slate-400 block text-[11px] uppercase tracking-wider">Capacidad Sede</span>
+                    <strong class="text-white text-base font-black">80 Cupos Máx.</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[11px] uppercase tracking-wider">Sesiones Semanales</span>
+                    <strong class="text-white text-base font-black">{{ total_clases }} Clases Activas</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[11px] uppercase tracking-wider">Control de Acceso</span>
+                    <strong class="text-emerald-400 text-base font-black">Torniquete QR / RUT</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[11px] uppercase tracking-wider">Flexibilidad</span>
+                    <strong class="text-white text-base font-black">Freeze Policy</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. WIDGET DE AFORO EN VIVO (HORARIOS VALLE PARA EL VISITANTE) -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-1.5 max-w-lg">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ocupación Actual</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black border uppercase {{ badge_clase }}">
+                        Tráfico {{ nivel_trafico }}
+                    </span>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900">Aforo de las Instalaciones en Vivo</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">{{ mensaje_trafico }}</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-6 w-full md:w-auto">
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center min-w-[130px]">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Socios en Sala</span>
+                    <strong class="text-3xl font-black text-slate-900">{{ aforo }} <span class="text-xs font-normal text-slate-400">/ {{ capacidad }}</span></strong>
+                </div>
+
+                <div class="w-full sm:w-64 space-y-1.5">
+                    <div class="flex justify-between text-xs font-bold text-slate-700">
+                        <span>Ocupación de Sede</span>
+                        <span>{{ porcentaje }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                        <div class="h-2.5 rounded-full transition-all duration-500 
+                            {% if porcentaje < 45 %}bg-emerald-500
+                            {% elif porcentaje < 80 %}bg-amber-500
+                            {% else %}bg-rose-500{% endif %}" 
+                            style="width: {{ porcentaje }}%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 block text-right">Actualizado vía Torniquetes</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. DISCIPLINAS & ENTRENAMIENTOS DISPONIBLES -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="text-center max-w-xl mx-auto space-y-1.5">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Catálogo Deportivo</span>
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Disciplinas Impartidas</h2>
+            <p class="text-xs text-slate-500">Diseñadas para todos los niveles, desde acondicionamiento básico hasta fuerza avanzada.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for d in disciplinas %}
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:border-emerald-300 transition-all space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                        <i class="bi bi-fire"></i>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
+                        {% if d.intensidad == 'ALTA' %}bg-rose-50 text-rose-700 border border-rose-200
+                        {% elif d.intensidad == 'MEDIA' %}bg-amber-50 text-amber-700 border border-amber-200
+                        {% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                        Intensidad {{ d.intensidad }}
+                    </span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">{{ d.nombre }}</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">{{ d.descripcion|default:"Entrenamiento enfocado en resistencia física y acondicionamiento general." }}</p>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-6 text-slate-400 text-xs italic">
+                Cargando disciplinas de la sede...
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- 4. TARIFAS Y PLANES COMERCIALES (CON BENEFICIOS) -->
+    <section id="planes-seccion" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div class="text-center max-w-xl mx-auto space-y-1.5">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Suscripciones Sin Letra Chica</span>
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Elige el Plan que se Adapte a Ti</h2>
+            <p class="text-xs text-slate-500">Paga mensualmente o aprovecha nuestras opciones de franja horaria AM y PM.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {% for p in planes %}
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border {% if forloop.first %}border-emerald-500 ring-2 ring-emerald-500/20 shadow-md{% else %}border-slate-200/80 shadow-xs{% endif %} flex flex-col justify-between space-y-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ p.get_categoria_display }}</span>
+                            <h3 class="text-xl font-black text-slate-900 mt-0.5">{{ p.nombre }}</h3>
+                        </div>
+                        {% if forloop.first %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 uppercase">Popular</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="border-y border-slate-100 py-3">
+                        <span class="text-3xl font-black text-slate-900">${{ p.precio|floatformat:"0" }}</span>
+                        <span class="text-xs text-slate-400 font-semibold">/ {{ p.duracion_dias }} días</span>
+                    </div>
+
+                    <!-- Lista de Beneficios del Plan -->
+                    <div class="space-y-2">
+                        <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">Beneficios incluidos:</span>
+                        <ul class="space-y-2 text-xs text-slate-600">
+                            {% for b in p.lista_beneficios %}
+                            <li class="flex items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-emerald-600 text-xs"></i>
+                                <span>{{ b }}</span>
+                            </li>
+                            {% empty %}
+                            <li class="flex items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-emerald-600 text-xs"></i>
+                                <span>Acceso completo a sala de musculación</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-emerald-600 text-xs"></i>
+                                <span>Pase digital QR ilimitado</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'planes' %}" class="block w-full py-3 rounded-xl font-bold text-xs text-center text-white bg-slate-900 hover:bg-emerald-600 transition-colors shadow-xs">
+                            Contratar Plan
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="block w-full py-3 rounded-xl font-bold text-xs text-center text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-xs">
+                            Comenzar con este Plan
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- 5. NUESTROS COACHES / STAFF -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="text-center max-w-xl mx-auto space-y-1.5">
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Equipo Profesional</span>
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Entrena con los Mejores Coaches</h2>
+            <p class="text-xs text-slate-500">Profesores certificados a cargo de guiar tus clases y cuidar tu postura técnica.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for coach in profesores %}
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ coach.username }}" class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 p-1" alt="Coach">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm leading-tight">{{ coach.get_full_name|default:coach.username }}</h3>
+                    <span class="text-xs text-indigo-600 font-semibold block">{{ coach.especialidad|default:"Coach General" }}</span>
+                    <span class="text-[11px] text-slate-400">Instructor Certificado FitLife</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-4 text-slate-400 text-xs italic">
+                Staff docente disponible en recepción.
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- 6. PREGUNTAS FRECUENTES (FAQ ACORDEÓN) -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="text-center space-y-1.5">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Preguntas Frecuentes</span>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Todo lo que necesitas saber</h2>
+        </div>
+
+        <div class="space-y-3">
+            <!-- FAQ 1 -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+                <button type="button" onclick="toggleFaq(this)" class="w-full p-5 text-left font-bold text-sm text-slate-800 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <span>¿Cómo funciona el acceso por torniquetes?</span>
+                    <i class="bi bi-chevron-down text-slate-400 transition-transform"></i>
+                </button>
+                <div class="faq-contenido hidden px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                    Cada socio cuenta con un código QR único en su portal personal <em>Mi Membresía</em>. Al llegar a la sede, simplemente presentas la pantalla de tu celular frente al lector óptico del torniquete. Si te quedas sin batería, el recepcionista puede autorizar tu ingreso digitando tu RUT directamente en la terminal.
+                </div>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+                <button type="button" onclick="toggleFaq(this)" class="w-full p-5 text-left font-bold text-sm text-slate-800 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <span>¿Qué es la Política de Congelamiento (Freeze Policy)?</span>
+                    <i class="bi bi-chevron-down text-slate-400 transition-transform"></i>
+                </button>
+                <div class="faq-contenido hidden px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                    Si te vas de vacaciones o sufres una lesión temporal, puedes pausar tu membresía desde tu panel con un solo clic. El acceso se suspende y, al momento de reactivarla, la fecha de vencimiento de tu plan se posterga automáticamente la cantidad exacta de días que estuviste ausente, sin perder días pagados.
+                </div>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+                <button type="button" onclick="toggleFaq(this)" class="w-full p-5 text-left font-bold text-sm text-slate-800 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <span>¿Cuáles son las franjas horarias de los Planes AM y PM?</span>
+                    <i class="bi bi-chevron-down text-slate-400 transition-transform"></i>
+                </button>
+                <div class="faq-contenido hidden px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                    El <strong>Plan Mañana (AM)</strong> permite acceso irrestricto de 06:00 a 12:00 hrs. El <strong>Plan Tarde (PM)</strong> es válido de 12:01 a 23:00 hrs. Nuestros planes <strong>Mensual Full</strong> y <strong>Anual VIP</strong> permiten libre acceso 24/7 sin límite de horario.
+                </div>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+                <button type="button" onclick="toggleFaq(this)" class="w-full p-5 text-left font-bold text-sm text-slate-800 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <span>¿Cómo funciona la cancelación de clases y la lista de espera?</span>
+                    <i class="bi bi-chevron-down text-slate-400 transition-transform"></i>
+                </button>
+                <div class="faq-contenido hidden px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                    Puedes cancelar tu reserva sin penalización hasta 2 horas antes del inicio de la sesión. Si una clase está llena, puedes ingresar a la lista de espera (FIFO). Si alguien cancela con la anticipación debida, el cupo se transfiere automáticamente al primer socio en cola.
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+function toggleFaq(btn) {
+    const contenido = btn.nextElementSibling;
+    const icono = btn.querySelector('i');
+    
+    if (contenido.classList.contains('hidden')) {
+        contenido.classList.remove('hidden');
+        icono.classList.add('rotate-180');
+    } else {
+        contenido.classList.add('hidden');
+        icono.classList.remove('rotate-180');
+    }
+}
+</script>
+{% endblock %}

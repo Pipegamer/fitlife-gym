@@ -1,0 +1,1024 @@
+{% extends 'base.html' %}
+
+{% block title %}FitLife - Dashboard de Gestión{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- CABECERA -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Terminal de Control</span>
+            <h2 class="text-2xl font-black text-slate-900">
+                {% if user.rol == 'COORDINADOR' %}Coordinación Deportiva & Torniquetes{% else %}Dirección General & Finanzas{% endif %}
+            </h2>
+        </div>
+        <div class="flex items-center gap-2">
+            {% if user.rol == 'ADMINISTRADOR' %}
+                <div class="flex items-center gap-1.5">
+                    <a href="{% url 'reporte_socios_csv' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold shadow-xs">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Socios CSV
+                    </a>
+                    <a href="{% url 'reporte_recaudacion_csv' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold shadow-xs">
+                        <i class="bi bi-cash-coin me-1"></i> Pagos CSV
+                    </a>
+                    <a href="{% url 'reporte_asistencias_csv' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold shadow-xs">
+                        <i class="bi bi-clock-history me-1"></i> Accesos CSV
+                    </a>
+                    <a href="/admin/" target="_blank" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs">
+                        <i class="bi bi-database-gear me-1"></i> Django Admin
+                    </a>
+                </div>
+            {% endif %}
+            <a href="{% url 'home' %}" class="px-3 py-2 rounded-xl font-bold text-xs bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs">
+                Volver al Sitio
+            </a>
+        </div>
+    </div>
+
+    <!-- TARJETAS DE KPIS SEGÚN ROL -->
+    {% if user.rol == 'COORDINADOR' %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Aforo Físico Actual</span>
+                <div class="text-2xl font-black text-emerald-700">{{ aforo_actual }} <span class="text-xs font-normal text-slate-400">/ {{ capacidad_maxima }}</span></div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: {{ porcentaje_aforo }}%"></div>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Check-ins Hoy</span>
+                <div class="text-2xl font-black text-slate-900">{{ entradas_hoy }}</div>
+                <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                    <i class="bi bi-box-arrow-in-right"></i> Entradas autorizadas
+                </span>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Check-outs Hoy</span>
+                <div class="text-2xl font-black text-slate-900">{{ salidas_hoy }}</div>
+                <span class="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                    <i class="bi bi-box-arrow-right"></i> Salidas registradas
+                </span>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Lista de Espera Global</span>
+                <div class="text-2xl font-black text-purple-700">{{ total_espera }}</div>
+                <span class="text-xs text-purple-600 font-semibold flex items-center gap-1">
+                    <i class="bi bi-hourglass-split"></i> Socios en cola FIFO
+                </span>
+            </div>
+        </div>
+    {% elif user.rol == 'ADMINISTRADOR' %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Recaudación Bruta</span>
+                <div class="text-2xl font-black text-slate-900">${{ kpi_recaudacion_total|floatformat:"0" }} <span class="text-xs font-normal text-slate-400">CLP</span></div>
+                <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                    <i class="bi bi-graph-up-arrow"></i> Pagos registrados
+                </span>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Socios Activos</span>
+                <div class="text-2xl font-black text-emerald-700">{{ kpi_socios_activos }}</div>
+                <span class="text-xs text-slate-500 font-medium">Membresías vigentes</span>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Vencen en 7 días</span>
+                <div class="text-2xl font-black text-amber-600">{{ kpi_vencen_7_dias }}</div>
+                <span class="text-xs text-amber-700 font-medium">Próximos a renovar</span>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Capacidad Instalaciones</span>
+                <div class="text-2xl font-black text-slate-900">{{ kpi_total_capacidad }} <span class="text-xs font-normal text-slate-400">personas</span></div>
+                <span class="text-xs text-slate-500 font-medium">{{ salas|length }} salas físicas habilitadas</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- SIDEBAR DE NAVEGACIÓN -->
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 sticky top-24">
+                <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" class="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 p-1" alt="Avatar">
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm leading-tight">{{ user.get_full_name|default:user.username }}</h4>
+                        <span class="text-xs text-emerald-600 font-semibold">{{ user.get_rol_display }}</span>
+                    </div>
+                </div>
+
+                <nav class="space-y-1.5">
+                    {% if user.rol == 'ADMINISTRADOR' %}
+                        <button onclick="cambiarPestana('admin-usuarios', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-50 text-emerald-700 text-left">
+                            <i class="bi bi-people-fill"></i> Nómina & Alta Usuarios
+                        </button>
+                        <button onclick="cambiarPestana('gestion-planes', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left">
+                            <i class="bi bi-tag-fill"></i> Tarifas & Planes
+                        </button>
+                        <button onclick="cambiarPestana('admin-infraestructura', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left">
+                            <i class="bi bi-building-fill"></i> Salas & Disciplinas
+                        </button>
+                        <button onclick="cambiarPestana('crear-clases-admin', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left">
+                            <i class="bi bi-calendar-plus-fill"></i> Catálogo de Clases
+                        </button>
+                        <button onclick="cambiarPestana('carga-masiva', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left">
+                            <i class="bi bi-cloud-arrow-up-fill"></i> Carga Masiva CSV
+                        </button>
+                    {% elif user.rol == 'COORDINADOR' %}
+                        <button onclick="cambiarPestana('torniquete', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-50 text-emerald-700 text-left">
+                            <i class="bi bi-qr-code-scan"></i> Torniquete (QR & RUT)
+                        </button>
+                        <button onclick="cambiarPestana('agenda-semanal', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left">
+                            <i class="bi bi-calendar3"></i> Agenda & Sobrecupo
+                        </button>
+                        <button onclick="cambiarPestana('demandas-graficos', this)" class="btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left">
+                            <i class="bi bi-bar-chart-fill"></i> Métricas de Demanda
+                        </button>
+                    {% endif %}
+                </nav>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="lg:col-span-9 space-y-6">
+            <div id="alertaDash" class="hidden p-4 rounded-2xl text-sm font-semibold mb-4"></div>
+
+            {% if user.rol == 'ADMINISTRADOR' %}
+                <!-- 1. GESTIÓN DE USUARIOS Y VENTA PRESENCIAL EN CAJA -->
+                <div id="tab-admin-usuarios" class="tab-contenido space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Recepción & Gestión Comercial</span>
+                            <h3 class="text-xl font-bold text-slate-900 mt-0.5">Registrar Nuevo Usuario</h3>
+                            <p class="text-xs text-slate-500">Los clientes se crean sin membresía por defecto. Si pagan presencialmente en recepción, selecciona el plan y método de pago recibido.</p>
+                        </div>
+
+                        <form onsubmit="crearUsuarioAdmin(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Rol</label>
+                                <select id="user_rol" onchange="adaptarFormularioPorRol(this.value)" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-emerald-800">
+                                    <option value="SOCIO">Socio / Cliente</option>
+                                    <option value="INSTRUCTOR">Instructor / Profesor</option>
+                                    <option value="COORDINADOR">Coordinador Deportivo</option>
+                                    <option value="ADMINISTRADOR">Administrador General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuario</label>
+                                <input type="text" id="user_username" required placeholder="nombre.apellido" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña</label>
+                                <input type="password" id="user_password" required placeholder="••••••••" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre Completo</label>
+                                <input type="text" id="user_nombre" placeholder="Nombre y Apellidos" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RUT</label>
+                                <input type="text" id="user_rut" placeholder="12.345.678-9" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+
+                            <div id="campo_especialidad" class="hidden">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Especialidad Docente</label>
+                                <input type="text" id="user_especialidad" placeholder="ej: Spinning, Crossfit, Boxeo" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+
+                            <!-- CAMPO PLAN DESACOPLADO CON OPCIÓN POR DEFECTO -->
+                            <div id="campo_plan">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Plan Contratado en Recepción</label>
+                                <select id="user_plan" onchange="conmutarMetodoPago(this.value)" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold">
+                                    <option value="" selected>Sin Membresía Inicial (Solo crear cuenta - Pago pendiente)</option>
+                                    {% for p in planes %}
+                                        <option value="{{ p.id }}">{{ p.nombre }} (${{ p.precio|floatformat:"0" }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- MÉTODO DE PAGO OBLIGATORIO SI COMPRA EN CAJA -->
+                            <div id="campo_metodo_pago" class="hidden">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Método de Pago Recibido</label>
+                                <select id="user_metodo_pago" class="w-full px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-900">
+                                    <option value="EFECTIVO">Efectivo en Caja</option>
+                                    <option value="TARJETA" selected>Tarjeta Débito/Crédito (POS)</option>
+                                    <option value="TRANSFERENCIA">Transferencia Bancaria Verificada</option>
+                                    <option value="CORTESIA">Pase de Cortesía / Invitado ($0)</option>
+                                </select>
+                            </div>
+
+                            <div class="sm:col-span-3 pt-2">
+                                <button type="submit" class="w-full py-3 rounded-xl font-bold text-sm bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all">
+                                    Registrar Usuario
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- NÓMINA CON BOTÓN DE COBRO EN CAJA -->
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-base">Nómina Registrada</h4>
+                                <p class="text-xs text-slate-400">Total de registros: <span id="contadorUsuarios">{{ usuarios|length }}</span></p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="relative">
+                                    <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                    <input type="text" id="buscarUsuarioTexto" oninput="filtrarNominaUsuarios()" placeholder="Buscar por nombre o RUT..." class="pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                </div>
+                                <select id="filtrarRolSelect" onchange="filtrarNominaUsuarios()" class="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold">
+                                    <option value="TODOS">Todos los roles</option>
+                                    <option value="SOCIO">Solo Socios</option>
+                                    <option value="INSTRUCTOR">Solo Instructores</option>
+                                    <option value="COORDINADOR">Solo Coordinadores</option>
+                                    <option value="ADMINISTRADOR">Solo Administradores</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                                        <th class="py-2.5">Usuario / Nombre</th>
+                                        <th>Rol</th>
+                                        <th>RUT</th>
+                                        <th>Membresía & Vigencia</th>
+                                        <th>Operaciones Comerciales</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaUsuariosBody" class="divide-y divide-slate-100">
+                                    {% for u in usuarios %}
+                                    <tr class="fila-usuario" 
+                                        data-texto="{{ u.username|lower }} {{ u.first_name|lower }} {{ u.last_name|lower }} {{ u.rut|default:''|lower }}" 
+                                        data-rol="{{ u.rol }}">
+                                        <td class="py-2.5 font-bold text-slate-900">
+                                            {{ u.username }} <br>
+                                            <span class="text-[11px] font-normal text-slate-500">{{ u.get_full_name|default:"Sin nombre" }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold 
+                                                {% if u.rol == 'ADMINISTRADOR' %}bg-slate-900 text-white
+                                                {% elif u.rol == 'COORDINADOR' %}bg-purple-100 text-purple-800
+                                                {% elif u.rol == 'INSTRUCTOR' %}bg-indigo-100 text-indigo-800
+                                                {% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                                                {{ u.get_rol_display }}
+                                            </span>
+                                        </td>
+                                        <td><code>{{ u.rut|default:"-" }}</code></td>
+                                        <td>
+                                            {% if u.rol == 'SOCIO' %}
+                                                {% with m=u.membresias.first %}
+                                                    {% if m %}
+                                                        <div class="space-y-0.5">
+                                                            <strong class="text-slate-800">{{ m.plan.nombre }}</strong>
+                                                            <span class="px-2 py-0.2 rounded text-[10px] font-bold block w-max
+                                                                {% if m.estado == 'ACTIVA' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                                                {% elif m.estado == 'CONGELADA' %}bg-amber-50 text-amber-800 border border-amber-200
+                                                                {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                                                                {{ m.estado }} (Vence: {{ m.fecha_fin|date:"d/m/Y" }})
+                                                            </span>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="text-slate-400 italic font-semibold">Sin membresía (Inactivo)</span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% else %}
+                                                <span class="text-slate-400 italic">Personal Gimnasio</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="space-x-1.5">
+                                            {% if u.rol == 'SOCIO' %}
+                                                <!-- BOTÓN PROFESIONAL DE COBRO EN MESÓN (NO REGALA PASES) -->
+                                                <button onclick="abrirModalCobroCaja({{ u.id }}, '{{ u.username|escapejs }}', '{{ u.get_full_name|default:u.username|escapejs }}')" 
+                                                        class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-2xs">
+                                                    <i class="bi bi-cash-coin me-1"></i> Cobrar / Renovar
+                                                </button>
+                                                {% with m=u.membresias.first %}
+                                                    {% if m and m.estado == 'ACTIVA' %}
+                                                        <button onclick="cambiarMembresia({{ u.id }}, 'VENCIDA')" class="px-2 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold hover:bg-rose-100">
+                                                            Vencer
+                                                        </button>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% endif %}
+                                            <button onclick="toggleEstadoCuenta({{ u.id }})" class="px-2 py-1 rounded-lg border text-[11px] font-semibold {% if u.is_active %}text-slate-600 hover:bg-slate-100{% else %}bg-rose-100 text-rose-800 border-rose-300{% endif %}">
+                                                {% if u.is_active %}Bloquear{% else %}Activar{% endif %}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. GESTIÓN DE PLANES -->
+                <div id="tab-gestion-planes" class="tab-contenido hidden space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900" id="titulo_formulario_plan">Crear Nuevo Plan</h3>
+                                <p class="text-xs text-slate-500">Crea planes o selecciona uno de la tabla para editar sus tarifas y beneficios.</p>
+                            </div>
+                            <button type="button" id="btn_cancelar_edicion_plan" onclick="cancelarEdicionPlan()" class="hidden px-3 py-1.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                <i class="bi bi-x-circle me-1"></i> Cancelar Edición
+                            </button>
+                        </div>
+
+                        <input type="hidden" id="plan_id_edit" value="">
+
+                        <form onsubmit="crearOEditarPlan(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre</label>
+                                <input type="text" id="plan_nombre" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoría</label>
+                                <select id="plan_cat" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold">
+                                    <option value="MENSUAL">Mensual Full</option>
+                                    <option value="MANANA">Mañana AM</option>
+                                    <option value="TARDE">Tarde PM</option>
+                                    <option value="DIARIO">Pase Diario</option>
+                                    <option value="ANUAL">Anual VIP</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Precio (CLP)</label>
+                                <input type="number" id="plan_precio" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Duración (Días)</label>
+                                <input type="number" id="plan_dias" value="30" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descripción</label>
+                                <input type="text" id="plan_desc" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Beneficios (1 por línea)</label>
+                                <textarea id="plan_beneficios" rows="3" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"></textarea>
+                            </div>
+                            <div class="sm:col-span-3">
+                                <button type="submit" id="btn_guardar_plan" class="w-full py-2.5 rounded-xl font-bold text-sm bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+                                    Guardar Plan
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="overflow-x-auto pt-4 border-t border-slate-100">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-100 uppercase">
+                                        <th class="py-2.5">Plan</th>
+                                        <th>Categoría</th>
+                                        <th>Precio</th>
+                                        <th>Días</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    {% for p in planes %}
+                                    <tr>
+                                        <td class="py-2.5 font-bold text-slate-900">{{ p.nombre }}</td>
+                                        <td><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100">{{ p.get_categoria_display }}</span></td>
+                                        <td><strong>${{ p.precio|floatformat:"0" }}</strong></td>
+                                        <td>{{ p.duracion_dias }} d.</td>
+                                        <td class="space-x-1">
+                                            <button 
+                                                type="button"
+                                                onclick="cargarPlanParaEditar(this)"
+                                                data-id="{{ p.id }}"
+                                                data-nombre="{{ p.nombre }}"
+                                                data-cat="{{ p.categoria }}"
+                                                data-precio="{{ p.precio|floatformat:'0' }}"
+                                                data-dias="{{ p.duracion_dias }}"
+                                                data-desc="{{ p.descripcion }}"
+                                                data-beneficios="{{ p.beneficios }}"
+                                                class="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold hover:bg-amber-100">
+                                                <i class="bi bi-pencil-square me-1"></i> Editar
+                                            </button>
+                                            <button onclick="eliminarPlan({{ p.id }})" class="px-2.5 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold hover:bg-rose-100">
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. INFRAESTRUCTURA (SALAS & DISCIPLINAS) -->
+                <div id="tab-admin-infraestructura" class="tab-contenido hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                            <h4 class="font-bold text-slate-900 text-lg">Crear Sala</h4>
+                            <form onsubmit="crearSala(event)" class="space-y-3">
+                                <input type="text" id="sala_nombre" required placeholder="Nombre de sala" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                <input type="number" id="sala_capacidad" required value="20" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                <button type="submit" class="w-full py-2 rounded-xl font-bold text-sm bg-slate-900 text-white">Guardar Sala</button>
+                            </form>
+                        </div>
+                        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                            <h4 class="font-bold text-slate-900 text-lg">Crear Disciplina</h4>
+                            <form onsubmit="crearDisciplina(event)" class="space-y-3">
+                                <input type="text" id="disc_nombre" required placeholder="Nombre disciplina" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                <select id="disc_intensidad" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                    <option value="BAJA">Baja</option><option value="MEDIA" selected>Media</option><option value="ALTA">Alta</option>
+                                </select>
+                                <button type="submit" class="w-full py-2 rounded-xl font-bold text-sm bg-purple-700 text-white">Guardar Disciplina</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. CATÁLOGO MAESTRO CLASES -->
+                <div id="tab-crear-clases-admin" class="tab-contenido hidden space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
+                        <h3 class="text-xl font-bold text-slate-900">Registrar Clase en Catálogo</h3>
+                        <form onsubmit="crearClaseAdmin(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <input type="text" id="clase_base_nombre" required placeholder="Nombre de clase" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                            <select id="clase_base_disc" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                {% for d in disciplinas %}<option value="{{ d.id }}">{{ d.nombre }}</option>{% endfor %}
+                            </select>
+                            <select id="clase_base_sala" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                {% for s in salas %}<option value="{{ s.id }}">{{ s.nombre }}</option>{% endfor %}
+                            </select>
+                            <input type="number" id="clase_base_cupo" value="15" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                            <div class="sm:col-span-2">
+                                <textarea id="clase_base_desc" rows="2" placeholder="Descripción física..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm"></textarea>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-sm bg-emerald-600 text-white">Guardar Clase</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 5. CARGA MASIVA CSV -->
+                <div id="tab-carga-masiva" class="tab-contenido hidden space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                        <h3 class="text-xl font-bold text-slate-900">Carga Masiva vía CSV</h3>
+                        <form onsubmit="subirCSVMasivo(event)" class="space-y-4">
+                            <input type="file" id="archivoCSV" accept=".csv" required class="w-full px-4 py-3 rounded-xl bg-slate-50 border text-sm">
+                            <button type="submit" class="w-full py-3 rounded-xl font-bold text-sm bg-emerald-600 text-white">Iniciar Carga Masiva</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if user.rol == 'COORDINADOR' %}
+                <!-- MÓDULOS DE COORDINACIÓN MANTENIDOS -->
+                <div id="tab-torniquete" class="tab-contenido space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
+                        <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900">Control de Acceso Físico</h3>
+                                <p class="text-xs text-slate-500">Escanea con lector láser/QR o digita el RUT del socio y presiona Enter.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                            <input type="text" id="qrToken" onkeydown="if(event.key==='Enter') simularPasoTorniquete(false)" placeholder="Código QR" class="sm:col-span-4 px-4 py-3 rounded-xl bg-slate-50 border text-sm">
+                            <input type="text" id="rutInput" onkeydown="if(event.key==='Enter') simularPasoTorniquete(false)" placeholder="RUT" class="sm:col-span-3 px-4 py-3 rounded-xl bg-slate-50 border text-sm">
+                            <select id="sentido" class="sm:col-span-2 px-3 py-3 rounded-xl bg-slate-50 border text-sm font-semibold">
+                                <option value="ENTRADA">ENTRADA</option>
+                                <option value="SALIDA">SALIDA</option>
+                            </select>
+                            <button onclick="simularPasoTorniquete(false)" class="sm:col-span-3 py-3 rounded-xl font-bold text-sm bg-slate-900 text-white hover:bg-slate-800">
+                                Validar Paso
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs">
+                            <span class="text-amber-900">¿El socio olvidó su teléfono o tiene un trámite de excepción?</span>
+                            <button onclick="simularPasoTorniquete(true)" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-amber-600 text-white hover:bg-amber-700">
+                                Autorizar Pase Excepcional / Cortesía
+                            </button>
+                        </div>
+
+                        <div id="boxResultado" class="hidden p-5 rounded-2xl border text-center space-y-1">
+                            <div id="iconoRes" class="text-4xl mb-2"></div>
+                            <h4 id="tituloRes" class="font-extrabold text-base"></h4>
+                            <p id="msgRes" class="text-sm font-medium"></p>
+                            <div id="detallesSocioBox" class="mt-2 p-3 rounded-xl bg-white/90 border text-xs text-left inline-block w-full max-w-md space-y-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-agenda-semanal" class="tab-contenido hidden space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                        <h3 class="text-xl font-bold text-slate-900">Agenda Semanal & Control de Sobrecupo</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-100 uppercase">
+                                        <th class="py-3">Clase</th><th>Horario</th><th>Profesor</th><th>Aforo</th><th>Estado</th><th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    {% for c in clases %}
+                                    <tr>
+                                        <td class="py-3 font-bold">{{ c.nombre }}</td>
+                                        <td>{{ c.dia_semana_nombre }} - {{ c.fecha_hora|date:"H:i"|default:"Sin fecha" }}</td>
+                                        <td><strong>{{ c.instructor.get_full_name|default:"Sin asignar" }}</strong></td>
+                                        <td>{{ c.cupos_ocupados }} / {{ c.cupo_maximo }}</td>
+                                        <td>{{ c.get_estado_display }}</td>
+                                        <td class="space-x-1">
+                                            <button onclick="abrirModalCoordinar({{ c.id }}, '{{ c.nombre }}')" class="px-2 py-1 rounded bg-emerald-600 text-white font-bold">Coordinar</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-demandas-graficos" class="tab-contenido hidden space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                        <h3 class="text-lg font-bold text-slate-900">Concentración por Disciplina</h3>
+                        <div class="max-w-xs mx-auto">
+                            <canvas id="graficoDisciplinas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: COBRAR O RENOVAR PLAN EN CAJA (VENTA DE MESÓN) -->
+<div id="modalCobroCaja" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-3xl shadow-2xl space-y-4 border border-slate-100">
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Terminal de Venta / Recepción</span>
+            <h4 class="font-black text-slate-900 text-lg mt-0.5" id="modalCobroSocioNombre">Cobrar Membresía en Caja</h4>
+            <p class="text-xs text-slate-500">Selecciona el plan contratado y el método de pago recibido físicamente.</p>
+        </div>
+        <input type="hidden" id="modalCobroSocioId">
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Plan a Contratar</label>
+                <select id="modalCobroPlan" onchange="actualizarMontoModalCobro()" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold">
+                    {% for p in planes %}
+                        <option value="{{ p.id }}" data-precio="{{ p.precio|floatformat:'0' }}">{{ p.nombre }} (${{ p.precio|floatformat:"0" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Método de Pago Recibido</label>
+                <select id="modalCobroMetodo" onchange="actualizarMontoModalCobro()" class="w-full px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-900">
+                    <option value="EFECTIVO">Efectivo en Caja</option>
+                    <option value="TARJETA" selected>Tarjeta Débito/Crédito (POS)</option>
+                    <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                    <option value="CORTESIA">Pase de Cortesía / Invitado ($0)</option>
+                </select>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <span class="text-xs text-slate-500 font-medium">Total a Ingresar:</span>
+                <strong class="text-lg font-black text-slate-900" id="modalCobroTotalTexto">$0 CLP</strong>
+            </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+            <button onclick="confirmarCobroCaja()" class="flex-1 py-3 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors">
+                Confirmar Cobro y Activar
+            </button>
+            <button onclick="cerrarModalCobroCaja()" class="px-4 py-3 rounded-xl font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL COORDINAR CLASE -->
+<div id="modalCoordinar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-md w-full p-6 rounded-3xl shadow-xl space-y-4">
+        <h4 class="font-bold text-slate-900 text-lg" id="modalClaseNombre">Coordinar Clase</h4>
+        <input type="hidden" id="modalClaseId">
+        <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Profesor Asignado</label>
+            <select id="modalProfesor" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                {% for prof in profesores %}
+                    <option value="{{ prof.id }}">{{ prof.get_full_name|default:prof.username }} ({{ prof.especialidad|default:"Coach" }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Fecha y Hora</label>
+            <input type="datetime-local" id="modalFechaHora" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+        </div>
+        <div class="flex gap-2 pt-2">
+            <button onclick="guardarCoordinacion()" class="flex-1 py-2 rounded-xl font-bold text-xs bg-emerald-600 text-white">Guardar</button>
+            <button onclick="cerrarModalCoordinar()" class="px-4 py-2 rounded-xl font-bold text-xs border text-slate-600">Cancelar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function cambiarPestana(tabId, btn) {
+    document.querySelectorAll('.tab-contenido').forEach(t => t.classList.add('hidden'));
+    const target = document.getElementById(`tab-${tabId}`);
+    if (target) target.classList.remove('hidden');
+
+    document.querySelectorAll('.btn-tab').forEach(b => {
+        b.className = 'btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 text-left';
+    });
+    btn.className = 'btn-tab w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-50 text-emerald-700 text-left';
+}
+
+function notificarDash(msg, ok) {
+    const box = document.getElementById('alertaDash');
+    box.className = ok 
+        ? "p-4 rounded-2xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-4" 
+        : "p-4 rounded-2xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 mb-4";
+    box.innerText = msg;
+    box.classList.remove('hidden');
+    window.scrollTo({ top: box.offsetTop - 80, behavior: 'smooth' });
+}
+
+// ADAPTAR FORMULARIO SEGÚN ROL Y CONMUTAR MÉTODO DE PAGO
+function adaptarFormularioPorRol(rol) {
+    const colPlan = document.getElementById('campo_plan');
+    const colEsp = document.getElementById('campo_especialidad');
+    const colMetodo = document.getElementById('campo_metodo_pago');
+
+    if (rol === 'SOCIO') {
+        if (colPlan) colPlan.classList.remove('hidden');
+        if (colEsp) colEsp.classList.add('hidden');
+        conmutarMetodoPago(document.getElementById('user_plan').value);
+    } else if (rol === 'INSTRUCTOR') {
+        if (colPlan) colPlan.classList.add('hidden');
+        if (colMetodo) colMetodo.classList.add('hidden');
+        if (colEsp) colEsp.classList.remove('hidden');
+    } else {
+        if (colPlan) colPlan.classList.add('hidden');
+        if (colMetodo) colMetodo.classList.add('hidden');
+        if (colEsp) colEsp.classList.add('hidden');
+    }
+}
+
+function conmutarMetodoPago(planId) {
+    const colMetodo = document.getElementById('campo_metodo_pago');
+    if (planId && planId !== '') {
+        colMetodo.classList.remove('hidden');
+    } else {
+        colMetodo.classList.add('hidden');
+    }
+}
+
+// CREAR USUARIO SIN REGALAR PASES
+async function crearUsuarioAdmin(e) {
+    e.preventDefault();
+    const payload = {
+        rol: document.getElementById('user_rol').value,
+        username: document.getElementById('user_username').value,
+        password: document.getElementById('user_password').value,
+        rut: document.getElementById('user_rut').value,
+        first_name: document.getElementById('user_nombre').value,
+        especialidad: document.getElementById('user_especialidad') ? document.getElementById('user_especialidad').value : '',
+        plan_id: document.getElementById('user_plan') ? document.getElementById('user_plan').value : null,
+        metodo_pago: document.getElementById('user_metodo_pago') ? document.getElementById('user_metodo_pago').value : 'TARJETA'
+    };
+
+    const res = await fetch('/api/usuarios/crear-usuario/', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}, 
+        body: JSON.stringify(payload) 
+    });
+    const d = await res.json();
+    if (res.ok) { 
+        notificarDash(d.mensaje, true); 
+        setTimeout(() => location.reload(), 1400); 
+    } else { 
+        notificarDash(d.error || 'Error al registrar usuario.', false); 
+    }
+}
+
+// MODAL DE COBRO EN CAJA / RENOVACIÓN
+function abrirModalCobroCaja(socioId, username, nombreCompleto) {
+    document.getElementById('modalCobroSocioId').value = socioId;
+    document.getElementById('modalCobroSocioNombre').innerText = `Cobro en Caja: ${nombreCompleto} (@${username})`;
+    actualizarMontoModalCobro();
+    document.getElementById('modalCobroCaja').classList.remove('hidden');
+}
+
+function cerrarModalCobroCaja() {
+    document.getElementById('modalCobroCaja').classList.add('hidden');
+}
+
+function actualizarMontoModalCobro() {
+    const selectPlan = document.getElementById('modalCobroPlan');
+    const metodo = document.getElementById('modalCobroMetodo').value;
+    const opcionSeleccionada = selectPlan.options[selectPlan.selectedIndex];
+    const precio = opcionSeleccionada ? opcionSeleccionada.getAttribute('data-precio') : '0';
+
+    if (metodo === 'CORTESIA') {
+        document.getElementById('modalCobroTotalTexto').innerText = '$0 CLP (Cortesía)';
+    } else {
+        document.getElementById('modalCobroTotalTexto').innerText = `$${parseInt(precio).toLocaleString('es-CL')} CLP`;
+    }
+}
+
+async function confirmarCobroCaja() {
+    const socioId = document.getElementById('modalCobroSocioId').value;
+    const planId = document.getElementById('modalCobroPlan').value;
+    const metodo = document.getElementById('modalCobroMetodo').value;
+
+    try {
+        const res = await fetch(`/api/usuarios/${socioId}/cobrar-membresia-caja/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+            body: JSON.stringify({ plan_id: planId, metodo_pago: metodo })
+        });
+        const d = await res.json();
+        if (res.ok) {
+            notificarDash(d.mensaje, true);
+            cerrarModalCobroCaja();
+            setTimeout(() => location.reload(), 1400);
+        } else {
+            alert(d.error || 'Error al procesar el cobro.');
+        }
+    } catch(e) {
+        alert('Error de conexión.');
+    }
+}
+
+// FILTRADO REACTIVO DE USUARIOS
+function filtrarNominaUsuarios() {
+    const texto = document.getElementById('buscarUsuarioTexto').value.toLowerCase().trim();
+    const rol = document.getElementById('filtrarRolSelect').value;
+    let visibles = 0;
+
+    document.querySelectorAll('.fila-usuario').forEach(row => {
+        const rowTexto = row.getAttribute('data-texto') || '';
+        const rowRol = row.getAttribute('data-rol') || '';
+
+        const coincideTexto = !texto || rowTexto.includes(texto);
+        const coincideRol = (rol === 'TODOS') || (rowRol === rol);
+
+        if (coincideTexto && coincideRol) {
+            row.classList.remove('hidden');
+            visibles++;
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+
+    const contador = document.getElementById('contadorUsuarios');
+    if (contador) contador.innerText = visibles;
+}
+
+// CRUD PLANES
+function cargarPlanParaEditar(btn) {
+    document.getElementById('plan_id_edit').value = btn.dataset.id;
+    document.getElementById('plan_nombre').value = btn.dataset.nombre;
+    document.getElementById('plan_cat').value = btn.dataset.cat;
+    document.getElementById('plan_precio').value = btn.dataset.precio;
+    document.getElementById('plan_dias').value = btn.dataset.dias;
+    document.getElementById('plan_desc').value = btn.dataset.desc;
+    document.getElementById('plan_beneficios').value = btn.dataset.beneficios;
+
+    document.getElementById('titulo_formulario_plan').innerText = 'Modificar Plan #' + btn.dataset.id + ' (' + btn.dataset.nombre + ')';
+    document.getElementById('btn_guardar_plan').innerText = 'Guardar Cambios del Plan';
+    document.getElementById('btn_cancelar_edicion_plan').classList.remove('hidden');
+
+    window.scrollTo({ top: document.getElementById('tab-gestion-planes').offsetTop - 60, behavior: 'smooth' });
+}
+
+function cancelarEdicionPlan() {
+    document.getElementById('plan_id_edit').value = '';
+    document.getElementById('plan_nombre').value = '';
+    document.getElementById('plan_precio').value = '';
+    document.getElementById('plan_dias').value = '30';
+    document.getElementById('plan_desc').value = '';
+    document.getElementById('plan_beneficios').value = '';
+
+    document.getElementById('titulo_formulario_plan').innerText = 'Crear Nuevo Plan';
+    document.getElementById('btn_guardar_plan').innerText = 'Guardar Plan';
+    document.getElementById('btn_cancelar_edicion_plan').classList.add('hidden');
+}
+
+async function crearOEditarPlan(e) {
+    e.preventDefault();
+    const planId = document.getElementById('plan_id_edit').value;
+    const payload = {
+        nombre: document.getElementById('plan_nombre').value,
+        categoria: document.getElementById('plan_cat').value,
+        precio: document.getElementById('plan_precio').value,
+        duracion_dias: document.getElementById('plan_dias').value,
+        descripcion: document.getElementById('plan_desc').value,
+        beneficios: document.getElementById('plan_beneficios').value,
+    };
+
+    let url = planId ? `/api/planes/${planId}/` : '/api/planes/';
+    let metodo = planId ? 'PATCH' : 'POST';
+
+    const res = await fetch(url, {
+        method: metodo,
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify(payload)
+    });
+    const d = await res.json();
+    if (res.ok) {
+        notificarDash(planId ? `Plan "${d.nombre}" modificado correctamente.` : `Plan "${d.nombre}" creado exitosamente.`, true);
+        cancelarEdicionPlan();
+        setTimeout(() => location.reload(), 1400);
+    } else {
+        notificarDash(d.error || 'Error al procesar el plan.', false);
+    }
+}
+
+async function eliminarPlan(id) {
+    if (!confirm('¿Deseas eliminar este plan?')) return;
+    const res = await fetch(`/api/planes/${id}/`, { method: 'DELETE', headers: {'X-CSRFToken': getCookie('csrftoken')} });
+    if (res.ok) { notificarDash('Plan eliminado con éxito.', true); setTimeout(() => location.reload(), 1200); }
+}
+
+async function crearSala(e) {
+    e.preventDefault();
+    const payload = {
+        nombre: document.getElementById('sala_nombre').value,
+        capacidad_maxima: document.getElementById('sala_capacidad').value,
+    };
+    const res = await fetch('/api/salas/', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (res.ok) { notificarDash(`Sala "${d.nombre}" creada con éxito.`, true); setTimeout(() => location.reload(), 1200); }
+}
+
+async function crearDisciplina(e) {
+    e.preventDefault();
+    const payload = {
+        nombre: document.getElementById('disc_nombre').value,
+        intensidad: document.getElementById('disc_intensidad').value
+    };
+    const res = await fetch('/api/disciplinas/', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (res.ok) { notificarDash(`Disciplina "${d.nombre}" creada con éxito.`, true); setTimeout(() => location.reload(), 1200); }
+}
+
+async function crearClaseAdmin(e) {
+    e.preventDefault();
+    const payload = {
+        nombre: document.getElementById('clase_base_nombre').value,
+        descripcion: document.getElementById('clase_base_desc').value,
+        disciplina_id: document.getElementById('clase_base_disc').value,
+        sala_id: document.getElementById('clase_base_sala').value,
+        cupo_maximo: document.getElementById('clase_base_cupo').value
+    };
+    const res = await fetch('/api/clases/crear-clase-admin/', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (res.ok) { notificarDash(d.mensaje, true); setTimeout(() => location.reload(), 1400); }
+}
+
+async function subirCSVMasivo(e) {
+    e.preventDefault();
+    const input = document.getElementById('archivoCSV');
+    if (!input.files[0]) return alert('Selecciona un archivo');
+    const formData = new FormData();
+    formData.append('archivo_csv', input.files[0]);
+
+    const res = await fetch('/api/usuarios/carga-masiva-csv/', { method: 'POST', headers: {'X-CSRFToken': getCookie('csrftoken')}, body: formData });
+    const d = await res.json();
+    if (res.ok) { notificarDash(d.mensaje, true); setTimeout(() => location.reload(), 1500); }
+}
+
+async function cambiarMembresia(id, estado) {
+    const res = await fetch(`/api/usuarios/${id}/cambiar-estado-membresia/`, { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}, 
+        body: JSON.stringify({ estado: estado }) 
+    });
+    const d = await res.json();
+    if (res.ok) { notificarDash(d.mensaje, true); setTimeout(() => location.reload(), 1200); }
+    else { notificarDash(d.error || 'Operación denegada.', false); }
+}
+
+async function toggleEstadoCuenta(id) {
+    const res = await fetch(`/api/usuarios/${id}/toggle-cuenta/`, { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')} });
+    const d = await res.json();
+    if (res.ok) { notificarDash(d.mensaje, true); setTimeout(() => location.reload(), 1200); }
+}
+
+// TORNIQUETE Y COORDINACIÓN
+async function simularPasoTorniquete(esExcepcion) {
+    const qr = document.getElementById('qrToken').value.trim();
+    const rut = document.getElementById('rutInput').value.trim();
+    const tipo = document.getElementById('sentido').value;
+    const box = document.getElementById('boxResultado');
+    const icono = document.getElementById('iconoRes');
+    const titulo = document.getElementById('tituloRes');
+    const msg = document.getElementById('msgRes');
+    const detBox = document.getElementById('detallesSocioBox');
+
+    if (!qr && !rut) return alert('Ingresa un código QR o un RUT.');
+
+    const res = await fetch('/api/acceso-qr/validar/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({ codigo_qr: qr, rut: rut, tipo: tipo, es_excepcion: esExcepcion })
+    });
+    const data = await res.json();
+    box.classList.remove('hidden');
+
+    if (data.estado === 'PERMITIDO') {
+        box.className = 'p-5 rounded-2xl border bg-emerald-50 border-emerald-200 text-emerald-900 text-center space-y-1';
+        icono.innerHTML = '<i class="bi bi-check-circle-fill text-emerald-600"></i>';
+        titulo.innerText = esExcepcion ? 'PASE EXCEPCIONAL AUTORIZADO' : 'ACCESO AUTORIZADO';
+        msg.innerText = data.mensaje;
+        detBox.innerHTML = `
+            <div><strong>Socio:</strong> ${data.socio || '-'}</div>
+            <div><strong>RUT:</strong> ${data.rut || '-'}</div>
+            <div><strong>Plan:</strong> ${data.plan || 'N/A'} (Vence: ${data.vence || '-'})</div>
+            ${data.clase_info ? `<div class="text-emerald-700 font-bold mt-1">✔ ${data.clase_info}</div>` : ''}
+        `;
+        setTimeout(() => location.reload(), 2000);
+    } else {
+        box.className = 'p-5 rounded-2xl border bg-rose-50 border-rose-200 text-rose-900 text-center space-y-1';
+        icono.innerHTML = '<i class="bi bi-x-circle-fill text-rose-600"></i>';
+        titulo.innerText = 'ACCESO DENEGADO';
+        msg.innerText = data.mensaje || data.error;
+        detBox.innerHTML = `
+            <div><strong>Socio:</strong> ${data.socio || '-'}</div>
+            <div><strong>RUT:</strong> ${data.rut || '-'}</div>
+            <div><strong>Causa:</strong> <span class="text-rose-700 font-bold">${data.motivo || 'No autorizado'}</span></div>
+        `;
+    }
+}
+
+function abrirModalCoordinar(id, nombre) {
+    document.getElementById('modalClaseId').value = id;
+    document.getElementById('modalClaseNombre').innerText = `Coordinar: ${nombre}`;
+    document.getElementById('modalCoordinar').classList.remove('hidden');
+}
+
+function cerrarModalCoordinar() {
+    document.getElementById('modalCoordinar').classList.add('hidden');
+}
+
+async function guardarCoordinacion() {
+    const id = document.getElementById('modalClaseId').value;
+    const instructor_id = document.getElementById('modalProfesor').value;
+    const fecha_hora = document.getElementById('modalFechaHora').value;
+
+    const res = await fetch(`/api/clases/${id}/coordinar/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({ instructor_id: instructor_id, fecha_hora: fecha_hora })
+    });
+    const d = await res.json();
+    if (res.ok) { notificarDash(d.mensaje, true); cerrarModalCoordinar(); setTimeout(() => location.reload(), 1400); }
+    else { notificarDash(d.error || 'Error al coordinar.', false); }
+}
+
+async function cargarGraficoDemanda() {
+    try {
+        const res = await fetch('/api/aforo/metricas/');
+        const data = await res.json();
+        const ctx = document.getElementById('graficoDisciplinas');
+        if (ctx && data.chart_disciplinas) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.chart_disciplinas.map(d => d.nombre),
+                    datasets: [{
+                        data: data.chart_disciplinas.map(d => d.total_clases),
+                        backgroundColor: ['#10b981', '#8b5cf6', '#3b82f6', '#f59e0b', '#ec4899']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    } catch(e) {}
+}
+cargarGraficoDemanda();
+</script>
+{% endblock %}

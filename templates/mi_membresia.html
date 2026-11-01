@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+
+{% block title %}FitLife - Mi Pase Digital & Membresía{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- CABECERA -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Portal del Socio</span>
+            <h2 class="text-2xl font-black text-slate-900 mt-0.5">Mi Membresía & Pase Digital</h2>
+            <p class="text-xs text-slate-500">Bienvenido, <strong>{{ user.get_full_name|default:user.username }}</strong> • RUT: <code>{{ user.rut|default:"-" }}</code></p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="abrirModalCredencial()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                <i class="bi bi-printer me-1"></i> Credencial Oficial (PDF)
+            </button>
+            <a href="{% url 'clases' %}" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-colors">
+                <i class="bi bi-calendar3 me-1"></i> Reservar Clases
+            </a>
+        </div>
+    </div>
+
+    <!-- BANNER PREVENTIVO: ALERTA DE VENCIMIENTO INMINENTE (<= 3 DÍAS) -->
+    {% if alerta_por_vencer %}
+        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <i class="bi bi-exclamation-triangle-fill text-amber-600 text-lg"></i>
+                <div>
+                    <strong class="font-bold block text-sm">¡Tu membresía vence en {{ dias_restantes }} día(s)!</strong>
+                    <span>Renueva hoy para evitar interrupciones en el torniquete y mantener tus reservas activas.</span>
+                </div>
+            </div>
+            <a href="{% url 'planes' %}" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 text-center">
+                Renovar Membresía
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- BANNER DE MEMBRESÍA CONGELADA -->
+    {% if membresia and membresia.estado == 'CONGELADA' %}
+        <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <i class="bi bi-pause-circle-fill text-indigo-600 text-lg"></i>
+                <div>
+                    <strong class="font-bold block text-sm">Tu membresía está temporalmente congelada</strong>
+                    <span>Tu pase físico está pausado. Al reactivarla, se postergará automáticamente tu fecha de vencimiento.</span>
+                </div>
+            </div>
+            <button onclick="reactivarMembresia()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0">
+                Reactivar Mi Pase Ahora
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- CONTENEDOR DE ALERTAS DE ACCIONES JS -->
+    <div id="alertaSocio" class="hidden p-4 rounded-2xl text-sm font-semibold mb-4"></div>
+
+    <!-- TARJETAS DE ESTADO DEL SOCIO -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Estado del Pase</span>
+            <div class="text-xl font-black 
+                {% if membresia.estado == 'ACTIVA' %}text-emerald-700
+                {% elif membresia.estado == 'CONGELADA' %}text-indigo-700
+                {% else %}text-rose-700{% endif %}">
+                {{ membresia.estado|default:"INACTIVO" }}
+            </div>
+            <span class="text-xs text-slate-500 font-medium">{{ membresia.plan.nombre|default:"Sin plan contratado" }}</span>
+        </div>
+
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Días de Cobertura</span>
+            <div class="text-2xl font-black text-slate-900">
+                {% if membresia and membresia.estado == 'ACTIVA' %}{{ dias_restantes }} <span class="text-xs font-normal text-slate-400">días restantes</span>
+                {% elif membresia.estado == 'CONGELADA' %}<span class="text-indigo-600 text-lg">En Pausa</span>
+                {% else %}0{% endif %}
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Vence: {{ membresia.fecha_fin|date:"d/m/Y"|default:"-" }}</span>
+        </div>
+
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Entrenamientos del Mes</span>
+            <div class="text-2xl font-black text-emerald-700">{{ asistencias_mes }}</div>
+            <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                <i class="bi bi-fire"></i> Entradas al recinto
+            </span>
+        </div>
+
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Clases Agendadas</span>
+            <div class="text-2xl font-black text-purple-700">{{ reservas|length }}</div>
+            <span class="text-xs text-purple-600 font-semibold flex items-center gap-1">
+                <i class="bi bi-calendar-check"></i> Reservas confirmadas
+            </span>
+        </div>
+    </div>
+
+    <!-- CUADRÍCULA PRINCIPAL: PASE QR + DETALLE DEL PLAN -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- 1. CREDENCIAL DIGITAL VECTORIAL -->
+        <div class="lg:col-span-5 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm text-center space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Pase QR de Torniquete</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Uso Personal</span>
+            </div>
+            
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ user.codigo_qr }}" class="w-44 h-44 bg-white p-2.5 rounded-2xl shadow-xs" alt="QR">
+                <code class="mt-4 font-mono font-black text-base text-emerald-800 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-200">
+                    {{ user.codigo_qr }}
+                </code>
+            </div>
+
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Muestra este código frente al escáner de la recepción. También puedes dictar tu RUT <code>{{ user.rut|default:"-" }}</code> al ingresar.
+            </p>
+        </div>
+
+        <!-- 2. GESTIÓN DEL PLAN & FREEZE POLICY -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Suscripción Actual</span>
+                        <h3 class="text-2xl font-black text-slate-900 mt-0.5">
+                            {% if membresia %}{{ membresia.plan.nombre }}{% else %}Sin Membresía Activa{% endif %}
+                        </h3>
+                    </div>
+                    {% if membresia %}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold 
+                            {% if membresia.estado == 'ACTIVA' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif membresia.estado == 'CONGELADA' %}bg-indigo-50 text-indigo-700 border border-indigo-200
+                            {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                            {{ membresia.estado }}
+                        </span>
+                    {% else %}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700">INACTIVA</span>
+                    {% endif %}
+                </div>
+
+                {% if membresia %}
+                    <div class="grid grid-cols-2 gap-4 py-3 border-y border-slate-100 text-xs">
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Inicio de Cobertura:</span>
+                            <strong class="text-slate-800 text-sm">{{ membresia.fecha_inicio|date:"d/m/Y" }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Vencimiento del Plan:</span>
+                            <strong class="text-emerald-700 text-sm">{{ membresia.fecha_fin|date:"d/m/Y" }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- BOTONES DE AUTOSERVICIO -->
+                    <div class="flex flex-wrap gap-2.5 pt-1">
+                        {% if membresia.estado == 'ACTIVA' %}
+                            <button onclick="congelarMembresia()" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors">
+                                <i class="bi bi-pause-circle me-1"></i> Pausar Membresía (Freeze Policy)
+                            </button>
+                        {% elif membresia.estado == 'CONGELADA' %}
+                            <button onclick="reactivarMembresia()" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                                <i class="bi bi-play-circle me-1"></i> Reactivar y Extender Vencimiento
+                            </button>
+                        {% endif %}
+                        <a href="{% url 'planes' %}" class="py-2.5 px-4 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                            Cambiar Plan
+                        </a>
+                        <button onclick="cancelarMiMembresia()" class="py-2.5 px-3 rounded-xl font-bold text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors">
+                            Cancelar Plan
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="py-4 text-center space-y-3">
+                        <p class="text-xs text-slate-500">No cuentas con un plan vigente. Elige uno de nuestros planes para desbloquear reservas y torniquete.</p>
+                        <a href="{% url 'planes' %}" class="inline-block py-3 px-6 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                            Ver Planes Disponibles
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 3. LISTAS DE ESPERA FIFO EN TIEMPO REAL -->
+            {% if esperas %}
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-purple-600">Turnos en Espera (FIFO)</span>
+                        <h4 class="font-bold text-slate-900 text-base mt-0.5">Mis Postulaciones a Clases Llenas</h4>
+                    </div>
+                    <span class="text-xs text-purple-700 font-bold bg-purple-50 px-2.5 py-1 rounded-xl border border-purple-200">
+                        {{ esperas|length }} en espera
+                    </span>
+                </div>
+
+                <div class="space-y-2.5 pt-2">
+                    {% for item in esperas %}
+                    <div class="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div>
+                            <strong class="text-slate-900 block text-sm">{{ item.objeto.clase.nombre }}</strong>
+                            <span class="text-slate-500">{{ item.objeto.clase.dia_semana_nombre }} {{ item.objeto.clase.fecha_hora|date:"d/m H:i" }} hrs • {{ item.objeto.clase.sala.nombre }}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="px-3 py-1 rounded-full font-black text-xs bg-purple-600 text-white shadow-2xs">
+                                Turno #{{ item.posicion }} en fila
+                            </span>
+                            <button onclick="abandonarEspera({{ item.objeto.clase.id }}, '{{ item.objeto.clase.nombre|escapejs }}')" 
+                                    class="text-rose-600 hover:text-rose-800 font-bold text-[11px] underline">
+                                Salir de la fila
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- MIS RESERVAS DE CLASES GRUPALES -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Agenda Deportiva</span>
+                <h4 class="font-bold text-slate-900 text-lg mt-0.5">Mis Reservas de Clases</h4>
+            </div>
+            <span class="text-xs text-slate-400">Cancelaciones permitidas hasta 2 horas antes de la sesión.</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                        <th class="py-2.5">Clase</th>
+                        <th>Horario / Sala</th>
+                        <th>Profesor</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for r in reservas %}
+                    <tr>
+                        <td class="py-3 font-bold text-slate-900">
+                            {{ r.clase.nombre }} <br>
+                            <span class="text-[11px] font-normal text-purple-600">{{ r.clase.disciplina.nombre|default:"General" }}</span>
+                        </td>
+                        <td>
+                            <strong class="text-slate-800">{{ r.clase.dia_semana_nombre }} • {{ r.clase.fecha_hora|date:"d/m H:i" }} hrs</strong> <br>
+                            <span class="text-slate-500">{{ r.clase.sala.nombre }}</span>
+                        </td>
+                        <td>{{ r.clase.instructor.get_full_name|default:"Profesor" }}</td>
+                        <td>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
+                                {% if r.estado == 'CONFIRMADA' %}bg-amber-50 text-amber-800 border border-amber-200
+                                {% elif r.estado == 'ASISTIO' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                {% elif r.estado == 'NO_SHOW' %}bg-rose-50 text-rose-700 border border-rose-200
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ r.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if r.estado == 'CONFIRMADA' %}
+                                <button onclick="cancelarReservaSocio({{ r.clase.id }})" class="px-3 py-1 rounded-lg font-bold text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors">
+                                    Cancelar Cupo
+                                </button>
+                            {% else %}
+                                <span class="text-slate-400 font-medium">Finalizada</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-4 text-center text-slate-400 italic">No tienes reservas activas. Explora el catálogo para reservar una clase.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- HISTORIAL DE ACCESOS POR TORNIQUETE -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+        <h4 class="font-bold text-slate-900 text-base">Auditoría de Mis Accesos al Recinto</h4>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                        <th class="py-2">Fecha y Hora</th>
+                        <th>Sentido</th>
+                        <th>Resultado</th>
+                        <th>Detalle Registrado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for acc in historial_accesos %}
+                    <tr>
+                        <td class="py-2.5 text-slate-600 font-mono">{{ acc.fecha_hora|date:"d/m/Y - H:i:s" }}</td>
+                        <td><span class="font-bold {% if acc.tipo == 'ENTRADA' %}text-emerald-600{% else %}text-amber-600{% endif %}">{{ acc.tipo }}</span></td>
+                        <td>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if acc.estado == 'PERMITIDO' %}bg-emerald-100 text-emerald-800{% else %}bg-rose-100 text-rose-800{% endif %}">
+                                {{ acc.estado }}
+                            </span>
+                        </td>
+                        <td class="text-slate-500">{{ acc.motivo }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-2 text-center text-slate-400">Sin registros de acceso aún.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL CREDENCIAL OFICIAL IMPRIMIBLE -->
+<div id="modalCredencial" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-sm w-full p-8 rounded-3xl shadow-2xl text-center space-y-4 border border-slate-200 print:m-0 print:border-none print:shadow-none">
+        <div class="flex items-center justify-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg">
+                <i class="bi bi-lightning-charge-fill"></i>
+            </div>
+            <span class="text-xl font-black text-slate-900">Fit<span class="text-emerald-600">Life</span></span>
+        </div>
+        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Pase Oficial de Socio</span>
+
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data={{ user.codigo_qr }}" class="w-36 h-36 bg-white p-2 rounded-xl" alt="QR">
+            <code class="mt-2 font-mono font-black text-emerald-800 text-sm">{{ user.codigo_qr }}</code>
+        </div>
+
+        <div class="text-left text-xs space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div><strong class="text-slate-700">Titular:</strong> {{ user.get_full_name|default:user.username }}</div>
+            <div><strong class="text-slate-700">RUT:</strong> {{ user.rut|default:"-" }}</div>
+            <div><strong class="text-slate-700">Plan:</strong> {{ membresia.plan.nombre|default:"Sin Plan" }}</div>
+            <div><strong class="text-slate-700">Vigencia:</strong> {{ membresia.fecha_fin|date:"d/m/Y"|default:"N/A" }}</div>
+        </div>
+
+        <div class="flex gap-2 pt-2 print:hidden">
+            <button onclick="window.print()" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-900 text-white hover:bg-slate-800">
+                <i class="bi bi-printer me-1"></i> Imprimir / PDF
+            </button>
+            <button onclick="cerrarModalCredencial()" class="px-4 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-600">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function notificarSocio(msg, ok) {
+    const box = document.getElementById('alertaSocio');
+    box.className = ok 
+        ? "p-4 rounded-2xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-4" 
+        : "p-4 rounded-2xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 mb-4";
+    box.innerText = msg;
+    box.classList.remove('hidden');
+    window.scrollTo({ top: box.offsetTop - 80, behavior: 'smooth' });
+}
+
+function abrirModalCredencial() {
+    document.getElementById('modalCredencial').classList.remove('hidden');
+}
+
+function cerrarModalCredencial() {
+    document.getElementById('modalCredencial').classList.add('hidden');
+}
+
+// FREEZE POLICY
+async function congelarMembresia() {
+    if (!confirm('¿Deseas pausar temporalmente tu membresía? El acceso físico al recinto quedará bloqueado hasta que decidas reactivarla.')) return;
+    const res = await fetch('/api/membresias/congelar-socio/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+    });
+    const d = await res.json();
+    alert(d.mensaje || d.error);
+    location.reload();
+}
+
+async function reactivarMembresia() {
+    const res = await fetch('/api/membresias/reactivar-socio/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+    });
+    const d = await res.json();
+    alert(d.mensaje || d.error);
+    location.reload();
+}
+
+async function cancelarMiMembresia() {
+    if (!confirm('¿Estás seguro de cancelar tu suscripción? Perderás el acceso a las instalaciones y tus reservas.')) return;
+    const res = await fetch('/api/membresias/cancelar-socio/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+    });
+    const d = await res.json();
+    alert(d.mensaje || d.error);
+    location.reload();
+}
+
+// CANCELAR RESERVA CON LÍMITE DE 2 HORAS
+async function cancelarReservaSocio(claseId) {
+    if (!confirm('¿Deseas cancelar tu reserva para esta clase? Recuerda que solo es permitido con al menos 2 horas de anticipación.')) return;
+    try {
+        const res = await fetch(`/api/clases/${claseId}/cancelar-reserva/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+        });
+        const d = await res.json();
+        if (res.ok) {
+            notificarSocio(d.mensaje + (d.promocion_espera ? ` (${d.promocion_espera})` : ''), true);
+            setTimeout(() => location.reload(), 1400);
+        } else {
+            notificarSocio(d.error || 'Error al cancelar reserva.', false);
+        }
+    } catch(e) {
+        alert('Error de conexión.');
+    }
+}
+
+// SALIR VOLUNTARIAMENTE DE LA LISTA DE ESPERA
+async function abandonarEspera(claseId, nombreClase) {
+    if (!confirm(`¿Deseas renunciar a tu turno en la lista de espera de "${nombreClase}"?`)) return;
+    try {
+        const res = await fetch(`/api/clases/${claseId}/cancelar-espera/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+        });
+        const d = await res.json();
+        if (res.ok) {
+            notificarSocio(d.mensaje, true);
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            notificarSocio(d.error || 'Error al abandonar la espera.', false);
+        }
+    } catch(e) {
+        alert('Error de conexión.');
+    }
+}
+</script>
+{% endblock %}
