@@ -187,7 +187,6 @@
                                 <input type="text" id="user_especialidad" placeholder="ej: Spinning, Crossfit, Boxeo" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm">
                             </div>
 
-                            <!-- CAMPO PLAN DESACOPLADO CON OPCIÓN POR DEFECTO -->
                             <div id="campo_plan">
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Plan Contratado en Recepción</label>
                                 <select id="user_plan" onchange="conmutarMetodoPago(this.value)" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold">
@@ -198,7 +197,6 @@
                                 </select>
                             </div>
 
-                            <!-- MÉTODO DE PAGO OBLIGATORIO SI COMPRA EN CAJA -->
                             <div id="campo_metodo_pago" class="hidden">
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Método de Pago Recibido</label>
                                 <select id="user_metodo_pago" class="w-full px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-900">
@@ -292,7 +290,6 @@
                                         </td>
                                         <td class="space-x-1.5">
                                             {% if u.rol == 'SOCIO' %}
-                                                <!-- BOTÓN PROFESIONAL DE COBRO EN MESÓN (NO REGALA PASES) -->
                                                 <button onclick="abrirModalCobroCaja({{ u.id }}, '{{ u.username|escapejs }}', '{{ u.get_full_name|default:u.username|escapejs }}')" 
                                                         class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-2xs">
                                                     <i class="bi bi-cash-coin me-1"></i> Cobrar / Renovar
@@ -317,7 +314,7 @@
                     </div>
                 </div>
 
-                <!-- 2. GESTIÓN DE PLANES -->
+                <!-- 2. GESTIÓN DE PLANES (CRUD COMPLETO) -->
                 <div id="tab-gestion-planes" class="tab-contenido hidden space-y-6">
                     <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
                         <div class="flex justify-between items-center pb-2 border-b border-slate-100">
@@ -414,19 +411,47 @@
                     </div>
                 </div>
 
-                <!-- 3. INFRAESTRUCTURA (SALAS & DISCIPLINAS) -->
+                <!-- 3. INFRAESTRUCTURA (SALAS & DISCIPLINAS) CON CRUD COMPLETO -->
                 <div id="tab-admin-infraestructura" class="tab-contenido hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- SECCIÓN SALAS -->
                         <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-                            <h4 class="font-bold text-slate-900 text-lg">Crear Sala</h4>
+                            <h4 class="font-bold text-slate-900 text-lg">Salas Físicas</h4>
                             <form onsubmit="crearSala(event)" class="space-y-3">
                                 <input type="text" id="sala_nombre" required placeholder="Nombre de sala" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
-                                <input type="number" id="sala_capacidad" required value="20" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                                <input type="number" id="sala_capacidad" required value="20" placeholder="Capacidad máxima" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
                                 <button type="submit" class="w-full py-2 rounded-xl font-bold text-sm bg-slate-900 text-white">Guardar Sala</button>
                             </form>
+
+                            <!-- LISTA DE SALAS EXISTENTES CON EDITAR Y ELIMINAR -->
+                            <div class="pt-4 border-t border-slate-100 space-y-2">
+                                <span class="text-xs font-bold text-slate-500 uppercase block">Salas Habilitadas:</span>
+                                <div class="space-y-2">
+                                    {% for s in salas %}
+                                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                                        <div>
+                                            <strong class="text-slate-900 font-bold block">{{ s.nombre }}</strong>
+                                            <span class="text-slate-500 text-[11px]">Capacidad: {{ s.capacidad_maxima }} personas</span>
+                                        </div>
+                                        <div class="space-x-1">
+                                            <button onclick="abrirModalEditarSala({{ s.id }}, '{{ s.nombre|escapejs }}', {{ s.capacidad_maxima }})" class="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold hover:bg-amber-100">
+                                                <i class="bi bi-pencil-square me-1"></i> Editar
+                                            </button>
+                                            <button onclick="eliminarSala({{ s.id }}, '{{ s.nombre|escapejs }}')" class="px-2.5 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold hover:bg-rose-100">
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-xs text-slate-400 italic">No hay salas registradas.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- SECCIÓN DISCIPLINAS -->
                         <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-                            <h4 class="font-bold text-slate-900 text-lg">Crear Disciplina</h4>
+                            <h4 class="font-bold text-slate-900 text-lg">Catálogo de Disciplinas</h4>
                             <form onsubmit="crearDisciplina(event)" class="space-y-3">
                                 <input type="text" id="disc_nombre" required placeholder="Nombre disciplina" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
                                 <select id="disc_intensidad" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
@@ -434,11 +459,36 @@
                                 </select>
                                 <button type="submit" class="w-full py-2 rounded-xl font-bold text-sm bg-purple-700 text-white">Guardar Disciplina</button>
                             </form>
+
+                            <!-- LISTA DE DISCIPLINAS EXISTENTES CON EDITAR Y ELIMINAR -->
+                            <div class="pt-4 border-t border-slate-100 space-y-2">
+                                <span class="text-xs font-bold text-slate-500 uppercase block">Disciplinas Activas:</span>
+                                <div class="space-y-2">
+                                    {% for d in disciplinas %}
+                                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                                        <div>
+                                            <strong class="text-slate-900 font-bold block">{{ d.nombre }}</strong>
+                                            <span class="text-purple-700 font-bold text-[11px]">Intensidad: {{ d.get_intensidad_display|default:d.intensidad }}</span>
+                                        </div>
+                                        <div class="space-x-1">
+                                            <button onclick="abrirModalEditarDisciplina({{ d.id }}, '{{ d.nombre|escapejs }}', '{{ d.intensidad|escapejs }}')" class="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold hover:bg-amber-100">
+                                                <i class="bi bi-pencil-square me-1"></i> Editar
+                                            </button>
+                                            <button onclick="eliminarDisciplina({{ d.id }}, '{{ d.nombre|escapejs }}')" class="px-2.5 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold hover:bg-rose-100">
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-xs text-slate-400 italic">No hay disciplinas registradas.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. CATÁLOGO MAESTRO CLASES -->
+                <!-- 4. CATÁLOGO MAESTRO CLASES CON CRUD COMPLETO -->
                 <div id="tab-crear-clases-admin" class="tab-contenido hidden space-y-6">
                     <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
                         <h3 class="text-xl font-bold text-slate-900">Registrar Clase en Catálogo</h3>
@@ -458,6 +508,56 @@
                                 <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-sm bg-emerald-600 text-white">Guardar Clase</button>
                             </div>
                         </form>
+
+                        <!-- LISTA DE CLASES DEL CATÁLOGO CON EDITAR Y ELIMINAR -->
+                        <div class="pt-6 border-t border-slate-100 space-y-3">
+                            <h4 class="font-bold text-slate-900 text-base">Clases Registradas en el Sistema</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="text-slate-400 border-b border-slate-100 uppercase">
+                                            <th class="py-2.5">Clase</th>
+                                            <th>Disciplina</th>
+                                            <th>Sala</th>
+                                            <th>Cupo</th>
+                                            <th>Estado</th>
+                                            <th class="text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        {% for c in clases %}
+                                        <tr>
+                                            <td class="py-2.5">
+                                                <strong class="font-bold text-slate-900 block">{{ c.nombre }}</strong>
+                                                <span class="text-[11px] text-slate-500">{{ c.descripcion|default:"Entrenamiento regular" }}</span>
+                                            </td>
+                                            <td>{{ c.disciplina.nombre|default:"General" }}</td>
+                                            <td>{{ c.sala.nombre|default:"Por Asignar" }}</td>
+                                            <td><strong>{{ c.cupo_maximo }}</strong> pers.</td>
+                                            <td>
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold 
+                                                    {% if c.estado == 'COORDINADA' %}bg-emerald-100 text-emerald-800
+                                                    {% elif c.estado == 'PROGRAMADA' %}bg-amber-100 text-amber-800
+                                                    {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                                    {{ c.get_estado_display }}
+                                                </span>
+                                            </td>
+                                            <td class="text-right space-x-1">
+                                                <button onclick="abrirModalEditarClase({{ c.id }}, '{{ c.nombre|escapejs }}', {{ c.disciplina.id|default:'null' }}, {{ c.sala.id|default:'null' }}, {{ c.cupo_maximo }}, '{{ c.descripcion|default:''|escapejs }}')" class="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold hover:bg-amber-100">
+                                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                                </button>
+                                                <button onclick="eliminarClase({{ c.id }}, '{{ c.nombre|escapejs }}')" class="px-2.5 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold hover:bg-rose-100">
+                                                    Eliminar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="6" class="py-3 text-slate-400 italic">No hay clases en el catálogo.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -531,7 +631,7 @@
                                         <td>{{ c.cupos_ocupados }} / {{ c.cupo_maximo }}</td>
                                         <td>{{ c.get_estado_display }}</td>
                                         <td class="space-x-1">
-                                            <button onclick="abrirModalCoordinar({{ c.id }}, '{{ c.nombre }}')" class="px-2 py-1 rounded bg-emerald-600 text-white font-bold">Coordinar</button>
+                                            <button onclick="abrirModalCoordinar({{ c.id }}, '{{ c.nombre|escapejs }}')" class="px-2 py-1 rounded bg-emerald-600 text-white font-bold">Coordinar</button>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -555,7 +655,11 @@
     </div>
 </div>
 
-<!-- MODAL: COBRAR O RENOVAR PLAN EN CAJA (VENTA DE MESÓN) -->
+<!-- ======================================================================= -->
+<!-- MODALES DE EDICIÓN Y OPERACIÓN COMERCIAL                                 -->
+<!-- ======================================================================= -->
+
+<!-- 1. MODAL COBRO EN CAJA -->
 <div id="modalCobroCaja" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-3xl shadow-2xl space-y-4 border border-slate-100">
         <div>
@@ -602,7 +706,7 @@
     </div>
 </div>
 
-<!-- MODAL COORDINAR CLASE -->
+<!-- 2. MODAL COORDINAR CLASE -->
 <div id="modalCoordinar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white max-w-md w-full p-6 rounded-3xl shadow-xl space-y-4">
         <h4 class="font-bold text-slate-900 text-lg" id="modalClaseNombre">Coordinar Clase</h4>
@@ -622,6 +726,103 @@
         <div class="flex gap-2 pt-2">
             <button onclick="guardarCoordinacion()" class="flex-1 py-2 rounded-xl font-bold text-xs bg-emerald-600 text-white">Guardar</button>
             <button onclick="cerrarModalCoordinar()" class="px-4 py-2 rounded-xl font-bold text-xs border text-slate-600">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. MODAL EDITAR SALA -->
+<div id="modalEditarSala" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-md w-full p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-100 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <h4 class="font-black text-slate-900 text-base">Modificar Sala Física</h4>
+            <button onclick="cerrarModalEditarSala()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+        </div>
+        <input type="hidden" id="edit_sala_id">
+        <div class="space-y-3">
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Nombre de la Sala</label>
+                <input type="text" id="edit_sala_nombre" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Capacidad Máxima (Aforo)</label>
+                <input type="number" id="edit_sala_capacidad" required min="1" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+            </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+            <button onclick="guardarEdicionSala()" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700">Guardar Cambios</button>
+            <button onclick="cerrarModalEditarSala()" class="px-4 py-2.5 rounded-xl font-bold text-xs border text-slate-600">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- 4. MODAL EDITAR DISCIPLINA -->
+<div id="modalEditarDisciplina" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-md w-full p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-100 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <h4 class="font-black text-slate-900 text-base">Modificar Disciplina</h4>
+            <button onclick="cerrarModalEditarDisciplina()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+        </div>
+        <input type="hidden" id="edit_disc_id">
+        <div class="space-y-3">
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Nombre Disciplina</label>
+                <input type="text" id="edit_disc_nombre" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Intensidad</label>
+                <select id="edit_disc_intensidad" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm font-semibold">
+                    <option value="BAJA">Baja</option>
+                    <option value="MEDIA">Media</option>
+                    <option value="ALTA">Alta</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+            <button onclick="guardarEdicionDisciplina()" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-purple-700 text-white hover:bg-purple-800">Guardar Cambios</button>
+            <button onclick="cerrarModalEditarDisciplina()" class="px-4 py-2.5 rounded-xl font-bold text-xs border text-slate-600">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- 5. MODAL EDITAR CLASE (ADMIN) -->
+<div id="modalEditarClase" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-lg w-full p-6 rounded-3xl shadow-2xl space-y-4 border border-slate-100 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <h4 class="font-black text-slate-900 text-base">Editar Clase del Catálogo</h4>
+            <button onclick="cerrarModalEditarClase()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+        </div>
+        <input type="hidden" id="edit_clase_id">
+        <div class="space-y-3">
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Nombre de la Clase</label>
+                <input type="text" id="edit_clase_nombre" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Disciplina</label>
+                    <select id="edit_clase_disc" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                        {% for d in disciplinas %}<option value="{{ d.id }}">{{ d.nombre }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Sala Frecuente</label>
+                    <select id="edit_clase_sala" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+                        {% for s in salas %}<option value="{{ s.id }}">{{ s.nombre }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Cupo Máximo</label>
+                <input type="number" id="edit_clase_cupo" required min="1" max="100" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm">
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Descripción del Trabajo Físico</label>
+                <textarea id="edit_clase_desc" rows="2" class="w-full px-3 py-2 rounded-xl bg-slate-50 border text-sm"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+            <button onclick="guardarEdicionClase()" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700">Guardar Cambios</button>
+            <button onclick="cerrarModalEditarClase()" class="px-4 py-2.5 rounded-xl font-bold text-xs border text-slate-600">Cancelar</button>
         </div>
     </div>
 </div>
@@ -863,6 +1064,7 @@ async function eliminarPlan(id) {
     if (res.ok) { notificarDash('Plan eliminado con éxito.', true); setTimeout(() => location.reload(), 1200); }
 }
 
+// CRUD SALAS
 async function crearSala(e) {
     e.preventDefault();
     const payload = {
@@ -874,6 +1076,58 @@ async function crearSala(e) {
     if (res.ok) { notificarDash(`Sala "${d.nombre}" creada con éxito.`, true); setTimeout(() => location.reload(), 1200); }
 }
 
+function abrirModalEditarSala(id, nombre, capacidad) {
+    document.getElementById('edit_sala_id').value = id;
+    document.getElementById('edit_sala_nombre').value = nombre;
+    document.getElementById('edit_sala_capacidad').value = capacidad;
+    document.getElementById('modalEditarSala').classList.remove('hidden');
+}
+
+function cerrarModalEditarSala() {
+    document.getElementById('modalEditarSala').classList.add('hidden');
+}
+
+async function guardarEdicionSala() {
+    const id = document.getElementById('edit_sala_id').value;
+    const payload = {
+        nombre: document.getElementById('edit_sala_nombre').value.trim(),
+        capacidad_maxima: document.getElementById('edit_sala_capacidad').value,
+    };
+    const res = await fetch(`/api/salas/${id}/`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify(payload)
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) {
+        notificarDash('Sala actualizada correctamente.', true);
+        cerrarModalEditarSala();
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        notificarDash(d.error || 'Error al actualizar la sala.', false);
+    }
+}
+
+async function eliminarSala(id, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar permanentemente la sala "${nombre}"?`)) return;
+    try {
+        const res = await fetch(`/api/salas/${id}/`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': getCookie('csrftoken')}
+        });
+        if (res.ok) {
+            notificarDash(`Sala "${nombre}" eliminada con éxito.`, true);
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            const d = await res.json().catch(() => ({}));
+            notificarDash(d.error || 'No fue posible eliminar la sala.', false);
+        }
+    } catch(e) {
+        notificarDash('Error de comunicación con el servidor.', false);
+    }
+}
+
+// CRUD DISCIPLINAS
 async function crearDisciplina(e) {
     e.preventDefault();
     const payload = {
@@ -885,6 +1139,58 @@ async function crearDisciplina(e) {
     if (res.ok) { notificarDash(`Disciplina "${d.nombre}" creada con éxito.`, true); setTimeout(() => location.reload(), 1200); }
 }
 
+function abrirModalEditarDisciplina(id, nombre, intensidad) {
+    document.getElementById('edit_disc_id').value = id;
+    document.getElementById('edit_disc_nombre').value = nombre;
+    document.getElementById('edit_disc_intensidad').value = intensidad;
+    document.getElementById('modalEditarDisciplina').classList.remove('hidden');
+}
+
+function cerrarModalEditarDisciplina() {
+    document.getElementById('modalEditarDisciplina').classList.add('hidden');
+}
+
+async function guardarEdicionDisciplina() {
+    const id = document.getElementById('edit_disc_id').value;
+    const payload = {
+        nombre: document.getElementById('edit_disc_nombre').value.trim(),
+        intensidad: document.getElementById('edit_disc_intensidad').value,
+    };
+    const res = await fetch(`/api/disciplinas/${id}/`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify(payload)
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) {
+        notificarDash('Disciplina actualizada correctamente.', true);
+        cerrarModalEditarDisciplina();
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        notificarDash(d.error || 'Error al actualizar la disciplina.', false);
+    }
+}
+
+async function eliminarDisciplina(id, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar permanentemente la disciplina "${nombre}"?`)) return;
+    try {
+        const res = await fetch(`/api/disciplinas/${id}/`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': getCookie('csrftoken')}
+        });
+        if (res.ok) {
+            notificarDash(`Disciplina "${nombre}" eliminada con éxito.`, true);
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            const d = await res.json().catch(() => ({}));
+            notificarDash(d.error || 'No fue posible eliminar la disciplina.', false);
+        }
+    } catch(e) {
+        notificarDash('Error de comunicación con el servidor.', false);
+    }
+}
+
+// CRUD CLASES
 async function crearClaseAdmin(e) {
     e.preventDefault();
     const payload = {
@@ -897,6 +1203,63 @@ async function crearClaseAdmin(e) {
     const res = await fetch('/api/clases/crear-clase-admin/', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}, body: JSON.stringify(payload) });
     const d = await res.json();
     if (res.ok) { notificarDash(d.mensaje, true); setTimeout(() => location.reload(), 1400); }
+}
+
+function abrirModalEditarClase(id, nombre, discId, salaId, cupo, desc) {
+    document.getElementById('edit_clase_id').value = id;
+    document.getElementById('edit_clase_nombre').value = nombre;
+    if (discId) document.getElementById('edit_clase_disc').value = discId;
+    if (salaId) document.getElementById('edit_clase_sala').value = salaId;
+    document.getElementById('edit_clase_cupo').value = cupo;
+    document.getElementById('edit_clase_desc').value = desc;
+    document.getElementById('modalEditarClase').classList.remove('hidden');
+}
+
+function cerrarModalEditarClase() {
+    document.getElementById('modalEditarClase').classList.add('hidden');
+}
+
+async function guardarEdicionClase() {
+    const id = document.getElementById('edit_clase_id').value;
+    const payload = {
+        nombre: document.getElementById('edit_clase_nombre').value.trim(),
+        disciplina: document.getElementById('edit_clase_disc').value,
+        sala: document.getElementById('edit_clase_sala').value,
+        cupo_maximo: document.getElementById('edit_clase_cupo').value,
+        descripcion: document.getElementById('edit_clase_desc').value.trim(),
+    };
+    const res = await fetch(`/api/clases/${id}/`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify(payload)
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) {
+        notificarDash('Clase actualizada correctamente.', true);
+        cerrarModalEditarClase();
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        notificarDash(d.error || 'Error al actualizar la clase.', false);
+    }
+}
+
+async function eliminarClase(id, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar permanentemente la clase "${nombre}"? Se cancelarán reservas asociadas.`)) return;
+    try {
+        const res = await fetch(`/api/clases/${id}/`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': getCookie('csrftoken')}
+        });
+        if (res.ok) {
+            notificarDash(`Clase "${nombre}" eliminada con éxito.`, true);
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            const d = await res.json().catch(() => ({}));
+            notificarDash(d.error || 'No fue posible eliminar la clase.', false);
+        }
+    } catch(e) {
+        notificarDash('Error de comunicación con el servidor.', false);
+    }
 }
 
 async function subirCSVMasivo(e) {
