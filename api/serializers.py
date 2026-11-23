@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     Usuario, Sala, Disciplina, Plan, Membresia, Pago, 
     ClaseGrupal, ReservaClase, ListaEspera, RegistroAccesoQR
@@ -97,3 +98,14 @@ class RegistroAccesoQRSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroAccesoQR
         fields = ['id', 'usuario', 'usuario_username', 'tipo', 'estado', 'motivo', 'fecha_hora']
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Agrega claims personalizados de identidad y rol al token JWT."""
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['username'] = user.username
+        token['rol'] = user.rol
+        token['email'] = user.email
+        token['rut'] = user.rut
+        return token

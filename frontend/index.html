@@ -1,0 +1,565 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitLife - Wellness & Gym Platform (Cloud)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="./config.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- NAVBAR MODO CLARO (ESTÉTICA FITLIFE) -->
+    <header class="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Brand Logo -->
+            <a href="#inicio" class="flex items-center gap-2.5 group">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-emerald-200 group-hover:scale-105 transition-transform">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight text-slate-900">Fit<span class="text-emerald-600">Life</span></span>
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Wellness Platform</span>
+                </div>
+            </a>
+
+            <!-- Navegación -->
+            <nav class="hidden md:flex items-center gap-2 font-semibold text-sm">
+                <a href="#acceso" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-shield-lock me-1"></i> Acceso JWT
+                </a>
+                <a href="#aforo" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-speedometer2 me-1"></i> Aforo en Vivo
+                </a>
+                <a href="#salas" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-building me-1"></i> Gestión Salas
+                </a>
+                <a href="#planes" class="px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-tag me-1"></i> Planes
+                </a>
+            </nav>
+
+            <!-- Estado API y Refresco -->
+            <div class="flex items-center gap-2.5">
+                <span id="api-status" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                    <span class="w-2 h-2 rounded-full bg-slate-400"></span> Conectando...
+                </span>
+                <button onclick="cargarTodo()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 transition-all">
+                    <i class="bi bi-arrow-clockwise"></i> Actualizar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main id="inicio" class="flex-grow">
+        <!-- HERO CLARO FITLIFE -->
+        <section class="pt-10 pb-8 bg-gradient-to-b from-emerald-50/70 via-emerald-50/20 to-transparent">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div class="space-y-2 max-w-2xl">
+                    <span class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                        <i class="bi bi-cloud-check-fill"></i> Portal Frontend Desacoplado • AWS Cloud
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                        Entrena a tu ritmo, <span class="text-emerald-600">gestionado en tiempo real.</span>
+                    </h1>
+                    <p class="text-sm text-slate-600">
+                        Interfaz desacoplada en EC2 integrada con API Gateway, Django REST Framework, JWT y Amazon RDS PostgreSQL.
+                    </p>
+                </div>
+                <div class="bg-white px-4 py-3 rounded-2xl border border-slate-200/90 shadow-sm text-xs space-y-1 min-w-[280px]">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-bold text-slate-400 uppercase text-[10px]">Endpoint API</span>
+                        <code id="api-url-display" class="text-emerald-700 font-semibold"></code>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                        <span class="font-bold text-slate-400 uppercase text-[10px]">Última Respuesta</span>
+                        <span id="last-http" class="text-slate-600 font-semibold">En espera...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-10">
+
+            <!-- FILA 1: AUTENTICACIÓN JWT + AFORO EN VIVO -->
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Tarjeta 1: Login JWT -->
+                <div id="acceso" class="lg:col-span-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-7 space-y-5">
+                    <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Seguridad & Sesión</span>
+                            <h2 class="text-lg font-extrabold text-slate-900">1. Autenticación JWT</h2>
+                        </div>
+                        <span id="jwt-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            Sin sesión (Anónimo)
+                        </span>
+                    </div>
+
+                    <form id="login-form" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div class="sm:col-span-4 relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input id="login-username" type="text" placeholder="Usuario (ej: admin)" required
+                                class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                        </div>
+                        <div class="sm:col-span-4 relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input id="login-password" type="password" placeholder="Contraseña" required
+                                class="w-full pl-9 pr-9 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                            <button type="button" onclick="togglePass()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-emerald-600">
+                                <i id="icono-ojo" class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <button type="submit" class="sm:col-span-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2.5 text-sm shadow-sm shadow-emerald-200 transition-all">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Obtener JWT
+                        </button>
+                    </form>
+
+                    <!-- Claims JWT activos -->
+                    <div id="jwt-info" class="hidden bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 text-xs space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-emerald-800"><i class="bi bi-patch-check-fill me-1"></i> Token Bearer activo (claims firmados):</span>
+                            <button onclick="cerrarSesion()" class="px-2.5 py-1 rounded-lg bg-white text-rose-600 hover:bg-rose-50 border border-rose-200 font-bold transition-colors">
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                        <pre id="jwt-claims" class="text-slate-700 bg-white/90 p-3 rounded-xl border border-emerald-100 overflow-x-auto font-mono"></pre>
+                    </div>
+
+                    <!-- Verificador de endpoint protegido -->
+                    <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs text-slate-500">
+                            Validar autorización en <code class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">/api/usuarios/</code>:
+                        </span>
+                        <button onclick="probarEndpointProtegido()" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-xs font-bold text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition-all">
+                            <i class="bi bi-key me-1"></i> Probar Acceso Protegido
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 2: Aforo en Vivo -->
+                <div id="aforo" class="lg:col-span-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-7 flex flex-col justify-between space-y-5">
+                    <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Monitoreo Físico</span>
+                            <h2 class="text-lg font-extrabold text-slate-900">2. Aforo Actual del Gimnasio</h2>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> En vivo
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase block">En Sala</span>
+                            <div id="aforo-actual" class="text-2xl font-black text-slate-900 mt-1">--</div>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase block">Capacidad</span>
+                            <div id="aforo-maximo" class="text-2xl font-black text-slate-700 mt-1">--</div>
+                        </div>
+                        <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 text-center">
+                            <span class="text-[11px] font-bold text-emerald-700 uppercase block">Ocupación</span>
+                            <div id="aforo-pct" class="text-2xl font-black text-emerald-600 mt-1">--%</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-200/70">
+                            <div id="aforo-barra" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+                            <span>0% Libre</span>
+                            <span>50% Moderado</span>
+                            <span>100% Completo</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FILA 2: CRUD COMPLETO DE SALAS (PERSISTENCIA EN RDS) -->
+            <section id="salas" class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Operaciones CRUD + Persistencia RDS</span>
+                        <h2 class="text-xl font-extrabold text-slate-900">3. Gestión de Salas del Gimnasio</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Lectura pública (<strong>GET</strong>) &bull; Crear (<strong>POST</strong>), Editar (<strong>PATCH</strong>) y Eliminar (<strong>DELETE</strong>) requieren token JWT con rol Administrador.
+                        </p>
+                    </div>
+                    <span id="crud-feedback" class="hidden text-xs font-bold px-3.5 py-2 rounded-xl border"></span>
+                </div>
+
+                <!-- Formulario CRUD -->
+                <form id="sala-form" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                    <input type="hidden" id="sala-id">
+                    <div class="md:col-span-4">
+                        <input id="sala-nombre" type="text" placeholder="Nombre de la sala (ej: Sala CrossFit)" required
+                            class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <input id="sala-capacidad" type="number" min="1" max="500" value="25" placeholder="Capacidad" required
+                            class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="md:col-span-3">
+                        <input id="sala-descripcion" type="text" placeholder="Descripción breve"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="md:col-span-3 flex gap-2">
+                        <button id="sala-submit-btn" type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2.5 text-sm shadow-sm shadow-emerald-200 transition-all">
+                            <i class="bi bi-plus-lg me-1"></i> Crear Sala
+                        </button>
+                        <button id="sala-cancel-btn" type="button" onclick="resetFormularioSala()" class="hidden px-3 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tabla de Salas -->
+                <div class="overflow-x-auto rounded-2xl border border-slate-200/80">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="py-3 px-4 font-bold">ID</th>
+                                <th class="py-3 px-4 font-bold">Nombre de Sala</th>
+                                <th class="py-3 px-4 font-bold">Capacidad Máx.</th>
+                                <th class="py-3 px-4 font-bold">Descripción</th>
+                                <th class="py-3 px-4 font-bold text-right">Acciones (JWT)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salas-tbody" class="divide-y divide-slate-100 bg-white">
+                            <tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs">Cargando salas desde la API...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- FILA 3: CATÁLOGO DE PLANES FITLIFE -->
+            <section id="planes" class="space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Suscripciones FitLife</span>
+                        <h2 class="text-2xl font-extrabold text-slate-900">4. Planes Comerciales (GET /api/planes/)</h2>
+                    </div>
+                    <span class="text-xs text-slate-500">Datos consultados en JSON directo desde PostgreSQL</span>
+                </div>
+                <div id="planes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-6 text-center text-xs text-slate-400">
+                        Cargando planes...
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- FOOTER INSTITUCIONAL FITLIFE -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto text-slate-500 text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-1">
+            <p class="font-bold text-slate-800">
+                FitLife Gym Platform &mdash; Arquitectura AWS Distribuida (Evaluación N.º 4)
+            </p>
+            <p class="text-xs text-slate-600 font-medium">
+                Desarrollador: <span class="font-bold text-slate-900">Felipe Eduardo Rivas Garrido</span> |
+                Sección: <span class="font-bold text-slate-900">AP-N4-C2</span> |
+                Año: <span class="font-bold text-slate-900">2026</span>
+            </p>
+            <p class="text-[11px] text-slate-400">
+                Programación Backend &bull; EC2 Frontend &bull; API Gateway &bull; EC2 Backend DRF &bull; RDS PostgreSQL &bull; Amazon S3 &bull; CloudWatch
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = (window.FITLIFE_CONFIG?.API_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+        document.getElementById("api-url-display").textContent = API_BASE;
+
+        let salasCache = [];
+
+        // Carga opcional de CSS estático desde Amazon S3 (Actividad 6)
+        if (window.FITLIFE_CONFIG?.S3_STATIC_CSS_URL) {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = window.FITLIFE_CONFIG.S3_STATIC_CSS_URL;
+            document.head.appendChild(link);
+        }
+
+        function togglePass() {
+            const input = document.getElementById("login-password");
+            const icono = document.getElementById("icono-ojo");
+            if (input.type === "password") {
+                input.type = "text";
+                icono.className = "bi bi-eye-slash text-emerald-600";
+            } else {
+                input.type = "password";
+                icono.className = "bi bi-eye";
+            }
+        }
+
+        function getToken() {
+            return localStorage.getItem("fitlife_jwt_access");
+        }
+
+        function authHeaders(includeJson = true) {
+            const headers = {};
+            if (includeJson) headers["Content-Type"] = "application/json";
+            const token = getToken();
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+            return headers;
+        }
+
+        function setLastHttp(method, path, status) {
+            const el = document.getElementById("last-http");
+            const color = status >= 200 && status < 300 ? "text-emerald-600" : status === 429 ? "text-amber-600" : "text-rose-600";
+            el.innerHTML = `<span class="font-bold ${color}">${method} ${path} &rarr; HTTP ${status}</span>`;
+        }
+
+        function showFeedback(msg, ok = true) {
+            const el = document.getElementById("crud-feedback");
+            el.textContent = msg;
+            el.className = `text-xs font-bold px-3.5 py-2 rounded-xl border ${
+                ok ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"
+            }`;
+            el.classList.remove("hidden");
+        }
+
+        function renderJwtState() {
+            const token = getToken();
+            const badge = document.getElementById("jwt-badge");
+            const info = document.getElementById("jwt-info");
+            const claimsEl = document.getElementById("jwt-claims");
+
+            if (!token) {
+                badge.textContent = "Sin sesión (Anónimo)";
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200";
+                info.classList.add("hidden");
+                return;
+            }
+            try {
+                const payload = JSON.parse(atob(token.split(".")[1]));
+                badge.textContent = `JWT Activo: ${payload.username || "usuario"} (${payload.rol || "N/A"})`;
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200";
+                claimsEl.textContent = JSON.stringify({
+                    username: payload.username,
+                    rol: payload.rol,
+                    rut: payload.rut,
+                    expira: new Date(payload.exp * 1000).toLocaleTimeString()
+                }, null, 2);
+                info.classList.remove("hidden");
+            } catch {
+                cerrarSesion();
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem("fitlife_jwt_access");
+            localStorage.removeItem("fitlife_jwt_refresh");
+            renderJwtState();
+            showFeedback("Sesión JWT cerrada correctamente.", true);
+        }
+
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("login-username").value.trim();
+            const password = document.getElementById("login-password").value;
+            try {
+                const res = await fetch(`${API_BASE}/api/token/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                setLastHttp("POST", "/api/token/", res.status);
+                const data = await res.json();
+                if (!res.ok) {
+                    showFeedback(`Login fallido (HTTP ${res.status}): ${data.detail || "Credenciales inválidas"}`, false);
+                    return;
+                }
+                localStorage.setItem("fitlife_jwt_access", data.access);
+                localStorage.setItem("fitlife_jwt_refresh", data.refresh);
+                document.getElementById("login-password").value = "";
+                renderJwtState();
+                showFeedback("Token JWT obtenido y almacenado correctamente.", true);
+            } catch {
+                showFeedback("Error de conexión al solicitar el token JWT.", false);
+            }
+        });
+
+        async function probarEndpointProtegido() {
+            try {
+                const res = await fetch(`${API_BASE}/api/usuarios/`, {
+                    method: "GET",
+                    headers: authHeaders(false)
+                });
+                setLastHttp("GET", "/api/usuarios/", res.status);
+                if (res.ok) {
+                    const usuarios = await res.json();
+                    showFeedback(`Autorizado (HTTP 200): ${Array.isArray(usuarios) ? usuarios.length : 0} usuarios consultados en RDS.`, true);
+                } else {
+                    showFeedback(`Acceso denegado (HTTP ${res.status}): inicia sesión para enviar token JWT.`, false);
+                }
+            } catch {
+                showFeedback("No se pudo conectar con /api/usuarios/.", false);
+            }
+        }
+
+        async function cargarAforo() {
+            const res = await fetch(`${API_BASE}/api/aforo/metricas/`);
+            setLastHttp("GET", "/api/aforo/metricas/", res.status);
+            if (!res.ok) throw new Error("Error aforo");
+            const data = await res.json();
+            const actual = data.aforo_actual ?? data.personas_en_gimnasio ?? 0;
+            const maximo = data.capacidad_maxima ?? data.aforo_maximo ?? 80;
+            const pct = Math.min(100, Math.round((actual / Math.max(1, maximo)) * 100));
+            document.getElementById("aforo-actual").textContent = actual;
+            document.getElementById("aforo-maximo").textContent = maximo;
+            document.getElementById("aforo-pct").textContent = `${pct}%`;
+            document.getElementById("aforo-barra").style.width = `${pct}%`;
+        }
+
+        async function cargarSalas() {
+            const res = await fetch(`${API_BASE}/api/salas/`);
+            setLastHttp("GET", "/api/salas/", res.status);
+            if (!res.ok) throw new Error("Error salas");
+            salasCache = await res.json();
+            const tbody = document.getElementById("salas-tbody");
+            if (!salasCache.length) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs">No hay salas registradas.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = salasCache.map(s => `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="py-3.5 px-4 font-mono text-xs font-bold text-slate-400">#${s.id}</td>
+                    <td class="py-3.5 px-4 font-bold text-slate-900">${s.nombre}</td>
+                    <td class="py-3.5 px-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ${s.capacidad_maxima} pers.
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-600 text-xs">${s.descripcion || "Sin descripción"}</td>
+                    <td class="py-3.5 px-4 text-right space-x-1.5">
+                        <button onclick="editarSala(${s.id})" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 text-xs font-bold transition-colors">
+                            <i class="bi bi-pencil-square me-1"></i>Editar
+                        </button>
+                        <button onclick="eliminarSala(${s.id})" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors">
+                            <i class="bi bi-trash3 me-1"></i>Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function editarSala(id) {
+            const sala = salasCache.find(s => s.id === id);
+            if (!sala) return;
+            document.getElementById("sala-id").value = sala.id;
+            document.getElementById("sala-nombre").value = sala.nombre;
+            document.getElementById("sala-capacidad").value = sala.capacidad_maxima;
+            document.getElementById("sala-descripcion").value = sala.descripcion || "";
+            document.getElementById("sala-submit-btn").innerHTML = '<i class="bi bi-check-lg me-1"></i> Guardar (PATCH)';
+            document.getElementById("sala-cancel-btn").classList.remove("hidden");
+            document.getElementById("sala-nombre").focus();
+        }
+
+        function resetFormularioSala() {
+            document.getElementById("sala-form").reset();
+            document.getElementById("sala-id").value = "";
+            document.getElementById("sala-capacidad").value = 25;
+            document.getElementById("sala-submit-btn").innerHTML = '<i class="bi bi-plus-lg me-1"></i> Crear Sala';
+            document.getElementById("sala-cancel-btn").classList.add("hidden");
+        }
+
+        document.getElementById("sala-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.getElementById("sala-id").value;
+            const payload = {
+                nombre: document.getElementById("sala-nombre").value.trim(),
+                capacidad_maxima: Number(document.getElementById("sala-capacidad").value),
+                descripcion: document.getElementById("sala-descripcion").value.trim()
+            };
+            const method = id ? "PATCH" : "POST";
+            const path = id ? `/api/salas/${id}/` : "/api/salas/";
+
+            try {
+                const res = await fetch(`${API_BASE}${path}`, {
+                    method,
+                    headers: authHeaders(true),
+                    body: JSON.stringify(payload)
+                });
+                setLastHttp(method, path, res.status);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showFeedback(`Rechazado (HTTP ${res.status}): ${data.error || data.detail || JSON.stringify(data)}`, false);
+                    return;
+                }
+                showFeedback(id ? `Sala #${id} actualizada en PostgreSQL (HTTP ${res.status}).` : `Sala "${data.nombre}" creada en PostgreSQL (HTTP ${res.status}).`, true);
+                resetFormularioSala();
+                await cargarSalas();
+            } catch {
+                showFeedback("Error de conexión al guardar la sala.", false);
+            }
+        });
+
+        async function eliminarSala(id) {
+            const sala = salasCache.find(s => s.id === id);
+            const nombre = sala ? sala.nombre : `#${id}`;
+            if (!confirm(`¿Eliminar la sala "${nombre}" de PostgreSQL?`)) return;
+            const path = `/api/salas/${id}/`;
+            try {
+                const res = await fetch(`${API_BASE}${path}`, {
+                    method: "DELETE",
+                    headers: authHeaders(false)
+                });
+                setLastHttp("DELETE", path, res.status);
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    showFeedback(`No permitido (HTTP ${res.status}): ${data.error || data.detail || "Requiere JWT de Administrador"}`, false);
+                    return;
+                }
+                showFeedback(`Sala "${nombre}" eliminada de PostgreSQL (HTTP ${res.status}).`, true);
+                await cargarSalas();
+            } catch {
+                showFeedback("Error de conexión al eliminar la sala.", false);
+            }
+        }
+
+        async function cargarPlanes() {
+            const res = await fetch(`${API_BASE}/api/planes/`);
+            if (!res.ok) throw new Error("Error planes");
+            const planes = await res.json();
+            document.getElementById("planes-grid").innerHTML = planes.map(p => `
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all p-6 flex flex-col justify-between space-y-4">
+                    <div class="space-y-2">
+                        <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ${p.categoria}
+                        </span>
+                        <h3 class="text-lg font-extrabold text-slate-900">${p.nombre}</h3>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100">
+                        <span class="text-2xl font-black text-slate-900">$${Number(p.precio).toLocaleString("es-CL")}</span>
+                        <span class="text-xs font-semibold text-slate-400"> CLP</span>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        async function cargarTodo() {
+            const statusEl = document.getElementById("api-status");
+            try {
+                await Promise.all([cargarAforo(), cargarSalas(), cargarPlanes()]);
+                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Conectado a API + RDS';
+                statusEl.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200";
+            } catch {
+                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> Sin conexión con API';
+                statusEl.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200";
+            }
+        }
+
+        renderJwtState();
+        cargarTodo();
+    </script>
+</body>
+</html>

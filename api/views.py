@@ -12,6 +12,7 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import IsAuthenticated
 
 from .models import (
     Usuario, Sala, Disciplina, Plan, Membresia, Pago, 
@@ -76,6 +77,7 @@ def procesar_reglas_automaticas():
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all().order_by('-id')
     serializer_class = UsuarioSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['post'], url_path='crear-usuario')
     @transaction.atomic
@@ -297,6 +299,7 @@ class PlanViewSet(viewsets.ModelViewSet):
 class MembresiaViewSet(viewsets.ModelViewSet):
     queryset = Membresia.objects.all().select_related('usuario', 'plan')
     serializer_class = MembresiaSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['post'], url_path='contratar')
     @transaction.atomic
@@ -366,6 +369,7 @@ class MembresiaViewSet(viewsets.ModelViewSet):
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all().select_related('membresia__usuario')
     serializer_class = PagoSerializer
+    permission_classes = [IsAuthenticated]
 
 # ==============================================================================
 # 3. CLASES GRUPALES: RESERVAS, WAITLIST FIFO Y CANCELACIÓN A 2 HORAS
