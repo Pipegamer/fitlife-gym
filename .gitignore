@@ -1,19 +1,8 @@
-# Entorno virtual y Python
 env/
 venv/
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Archivos de seguridad y llaves
-*.pem
-*.key
+*.pyc
 .env
-
-# Logs y bases de datos locales
-access_log.log
-*.log
-*.sqlite3
-
-# Archivos estáticos recolectados
+db.sqlite3
 staticfiles/
+media/

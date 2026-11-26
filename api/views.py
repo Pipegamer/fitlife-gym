@@ -12,6 +12,8 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET, require_http_methods
+from rest_framework.permissions import IsAuthenticated
 
 from .models import (
     Usuario, Sala, Disciplina, Plan, Membresia, Pago, 
@@ -76,6 +78,7 @@ def procesar_reglas_automaticas():
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all().order_by('-id')
     serializer_class = UsuarioSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['post'], url_path='crear-usuario')
     @transaction.atomic
@@ -297,6 +300,7 @@ class PlanViewSet(viewsets.ModelViewSet):
 class MembresiaViewSet(viewsets.ModelViewSet):
     queryset = Membresia.objects.all().select_related('usuario', 'plan')
     serializer_class = MembresiaSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['post'], url_path='contratar')
     @transaction.atomic
@@ -366,6 +370,7 @@ class MembresiaViewSet(viewsets.ModelViewSet):
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all().select_related('membresia__usuario')
     serializer_class = PagoSerializer
+    permission_classes = [IsAuthenticated]
 
 # ==============================================================================
 # 3. CLASES GRUPALES: RESERVAS, WAITLIST FIFO Y CANCELACIÓN A 2 HORAS
@@ -748,6 +753,7 @@ class DashboardAforoView(APIView):
 # 5. REPORTES CSV (ADMINISTRADOR)
 # ==============================================================================
 @login_required(login_url='login')
+@require_GET
 def exportar_socios_csv(request):
     if not es_administrador(request.user):
         return HttpResponse('Acceso no autorizado.', status=403)
@@ -768,6 +774,7 @@ def exportar_socios_csv(request):
 
 
 @login_required(login_url='login')
+@require_GET
 def exportar_recaudacion_csv(request):
     if not es_administrador(request.user):
         return HttpResponse('Acceso no autorizado.', status=403)
@@ -787,6 +794,7 @@ def exportar_recaudacion_csv(request):
 
 
 @login_required(login_url='login')
+@require_GET
 def exportar_asistencias_csv(request):
     if not es_administrador(request.user):
         return HttpResponse('Acceso no autorizado.', status=403)
@@ -808,6 +816,7 @@ def exportar_asistencias_csv(request):
 # 6. PORTALES: SOCIO (AUTOSERVICIO COMPLETO), DOCENTE Y DASHBOARD
 # ==============================================================================
 @login_required(login_url='login')
+@require_GET
 def mi_membresia_view(request):
     """Portal exclusivo del Socio: credencial digital, cálculo de vencimiento y lista de espera."""
     hoy = timezone.now().date()
@@ -863,6 +872,7 @@ def mi_membresia_view(request):
 
 
 @login_required(login_url='login')
+@require_GET
 def instructor_view(request):
     if request.user.rol != 'INSTRUCTOR' and not request.user.is_superuser:
         return redirect('home')
@@ -894,6 +904,7 @@ def instructor_view(request):
 
 
 @login_required(login_url='login')
+@require_GET
 def dashboard_view(request):
     if request.user.rol not in ['ADMINISTRADOR', 'COORDINADOR'] and not request.user.is_superuser:
         return redirect('home')
@@ -940,6 +951,7 @@ def dashboard_view(request):
     })
 
 
+@require_GET
 def home_view(request):
     hoy = timezone.now().date()
     capacidad = 80
@@ -978,9 +990,11 @@ def home_view(request):
         'total_clases': ClaseGrupal.objects.filter(estado='COORDINADA').count(),
     })
 
+@require_GET
 def aforo_view(request):
     return render(request, 'aforo.html')
 
+@require_GET
 def clases_view(request):
     clases = ClaseGrupal.objects.all().select_related('disciplina', 'instructor', 'sala').order_by('fecha_hora')
     disciplinas = Disciplina.objects.all()
@@ -989,11 +1003,13 @@ def clases_view(request):
         'clases': clases, 'disciplinas': disciplinas, 'profesores': profesores
     })
 
+@require_GET
 def planes_view(request):
     planes = Plan.objects.all().order_by('precio')
     membresia_activa = request.user.membresias.filter(estado='ACTIVA').first() if request.user.is_authenticated else None
     return render(request, 'planes.html', {'planes': planes, 'membresia_activa': membresia_activa})
 
+@require_http_methods(["GET", "POST"])
 def login_view(request):
     if request.user.is_authenticated:
         if request.user.rol == 'INSTRUCTOR':
@@ -1016,6 +1032,7 @@ def login_view(request):
         return render(request, 'login.html', {'error': 'Credenciales no válidas.'})
     return render(request, 'login.html')
 
+@require_http_methods(["GET", "POST"])
 def logout_view(request):
     logout(request)
     return redirect('home')

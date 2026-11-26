@@ -1,4 +1,4 @@
-import os
+﻿import os
 import django
 import random
 from datetime import timedelta, time
@@ -103,29 +103,29 @@ def sembrar_datos():
     # 5. Usuarios Staff (Administrador, Coordinador y Coaches)
     print("Creando cuentas de staff directivo y docente...")
     admin = Usuario.objects.create_superuser(
-        username="admin", email="admin@fitlife.cl", password="admin1234",
+        username="admin", email="admin@fitlife.cl", password=os.environ.get("SEED_ADMIN_PASSWORD"),
         first_name="Felipe", last_name="Rivas", rut="17.892.451-2", rol="ADMINISTRADOR"
     )
 
     coord = Usuario.objects.create_user(
-        username="coord_laura", email="laura.coord@fitlife.cl", password="coord1234",
+        username="coord_laura", email="laura.coord@fitlife.cl", password=os.environ.get("SEED_COORD_PASSWORD"),
         first_name="Laura", last_name="Contreras", rut="16.745.321-K", rol="COORDINADOR", is_staff=True
     )
 
     coach_carlos = Usuario.objects.create_user(
-        username="coach_carlos", email="carlos.mendoza@fitlife.cl", password="coach1234",
+        username="coach_carlos", email="carlos.mendoza@fitlife.cl", password=os.environ.get("SEED_COACH_PASSWORD"),
         first_name="Carlos", last_name="Mendoza", rut="15.432.189-3", rol="INSTRUCTOR",
         especialidad="Spinning & HIIT Cardiovascular"
     )
 
     coach_valeria = Usuario.objects.create_user(
-        username="coach_valeria", email="valeria.silva@fitlife.cl", password="coach1234",
+        username="coach_valeria", email="valeria.silva@fitlife.cl", password=os.environ.get("SEED_COACH_PASSWORD"),
         first_name="Valeria", last_name="Silva", rut="16.890.123-5", rol="INSTRUCTOR",
         especialidad="Cross Training & Levantamiento Olímpico"
     )
 
     coach_matias = Usuario.objects.create_user(
-        username="coach_matias", email="matias.gomez@fitlife.cl", password="coach1234",
+        username="coach_matias", email="matias.gomez@fitlife.cl", password=os.environ.get("SEED_COACH_PASSWORD"),
         first_name="Matías", last_name="Gómez", rut="17.112.334-8", rol="INSTRUCTOR",
         especialidad="Boxeo Formativo & Pilates"
     )
@@ -135,7 +135,7 @@ def sembrar_datos():
     
     # 6.1 Socio Activo (Full 24/7 con pagos y reservas)
     socio_activo = Usuario.objects.create_user(
-        username="socio_activo", email="camila.reyes@gmail.com", password="socio1234",
+        username="socio_activo", email="camila.reyes@gmail.com", password=os.environ.get("SEED_SOCIO_PASSWORD"),
         first_name="Camila", last_name="Reyes", rut="18.222.333-4", rol="SOCIO"
     )
     m_activa = Membresia.objects.create(
@@ -146,7 +146,7 @@ def sembrar_datos():
 
     # 6.2 Socio Vencido (Para probar rechazo sonoro en torniquete)
     socio_vencido = Usuario.objects.create_user(
-        username="socio_vencido", email="ignacio.soto@gmail.com", password="socio1234",
+        username="socio_vencido", email="ignacio.soto@gmail.com", password=os.environ.get("SEED_SOCIO_PASSWORD"),
         first_name="Ignacio", last_name="Soto", rut="19.444.555-6", rol="SOCIO"
     )
     m_vencida = Membresia.objects.create(
@@ -157,7 +157,7 @@ def sembrar_datos():
 
     # 6.3 Socio Franja Mañana AM (Para probar validación horaria)
     socio_manana = Usuario.objects.create_user(
-        username="socio_manana", email="diego.morales@gmail.com", password="socio1234",
+        username="socio_manana", email="diego.morales@gmail.com", password=os.environ.get("SEED_SOCIO_PASSWORD"),
         first_name="Diego", last_name="Morales", rut="17.333.444-5", rol="SOCIO"
     )
     m_manana = Membresia.objects.create(
@@ -168,7 +168,7 @@ def sembrar_datos():
 
     # 6.4 Socio Franja Tarde PM
     socio_tarde = Usuario.objects.create_user(
-        username="socio_tarde", email="francisca.parra@gmail.com", password="socio1234",
+        username="socio_tarde", email="francisca.parra@gmail.com", password=os.environ.get("SEED_SOCIO_PASSWORD"),
         first_name="Francisca", last_name="Parra", rut="19.888.999-0", rol="SOCIO"
     )
     m_tarde = Membresia.objects.create(
@@ -179,7 +179,7 @@ def sembrar_datos():
 
     # 6.5 Socio Congelado (Para probar reactivación y extensión de vigencia)
     socio_congelado = Usuario.objects.create_user(
-        username="socio_congelado", email="valentina.castro@gmail.com", password="socio1234",
+        username="socio_congelado", email="valentina.castro@gmail.com", password=os.environ.get("SEED_SOCIO_PASSWORD"),
         first_name="Valentina", last_name="Castro", rut="18.555.666-7", rol="SOCIO"
     )
     Membresia.objects.create(
@@ -190,7 +190,7 @@ def sembrar_datos():
 
     # 6.6 Socio Nuevo sin membresía (Para probar el botón 'Cobrar en Caja' de recepción)
     socio_nuevo = Usuario.objects.create_user(
-        username="socio_nuevo", email="tomas.araya@gmail.com", password="socio1234",
+        username="socio_nuevo", email="tomas.araya@gmail.com", password=os.environ.get("SEED_SOCIO_PASSWORD"),
         first_name="Tomás", last_name="Araya", rut="20.123.456-7", rol="SOCIO"
     )
 
@@ -215,7 +215,7 @@ def sembrar_datos():
     for idx, (nom, ape, rut_val) in enumerate(nombres_apellidos, start=1):
         u = Usuario.objects.create_user(
             username=f"socio_{idx}", email=f"{nom.lower()}.{ape.lower()}@gmail.com",
-            password="socio1234", first_name=nom, last_name=ape, rut=rut_val, rol="SOCIO"
+            password=os.environ.get("SEED_SOCIO_PASSWORD"), first_name=nom, last_name=ape, rut=rut_val, rol="SOCIO"
         )
         plan_sel = random.choice(planes_lista)
         # 16 activos, 4 vencidos
@@ -351,3 +351,4 @@ def sembrar_datos():
 
 if __name__ == "__main__":
     sembrar_datos()
+
